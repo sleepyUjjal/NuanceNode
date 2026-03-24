@@ -11,9 +11,7 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
 
     # Relationship: 1 user : n chats. Delete chats on deleting user (cascade delete) 
-    # cascade="all, delete-orphan"
-
-
+    chats = relationship("Chat", back_populates="owner", cascade="all, delete-orphan")
 class Chat(Base):
     __tablename__ = "chats"
 

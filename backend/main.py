@@ -12,6 +12,7 @@ from jose import jwt, JWTError
 import models, schemas
 from database import engine, get_db
 from services import user_service, llm_service, pdf_service, link_service
+from services.user_service import SECRET_KEY, ALGORITHM
 
 # Initialize DB tables
 models.Base.metadata.create_all(bind=engine)
@@ -37,8 +38,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        from services.user_service import JWT_SECRET_KEY, JWT_ALGORITHM
-        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception

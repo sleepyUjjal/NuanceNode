@@ -2,3 +2,4 @@
 .DS_Store
 *.cpython-*.pyc
 __pycache__/
+generated_reports/

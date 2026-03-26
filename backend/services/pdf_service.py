@@ -33,7 +33,7 @@ def generate_pdf_report(chat_id: int, claim: str, report_data: dict) -> str:
         pdf.cell(0, 10, title, ln=True)
         pdf.set_font("helvetica", "", 11)
         pdf.set_text_color(50, 50, 50)
-        # Handle special characters gracefully
+        # Handle special characters
         safe_content = str(content).encode('latin-1', 'replace').decode('latin-1')
         pdf.multi_cell(0, 7, safe_content)
         pdf.ln(5)
@@ -77,16 +77,28 @@ def generate_pdf_report(chat_id: int, claim: str, report_data: dict) -> str:
         pdf.set_text_color(0, 128, 0)
         pdf.cell(0, 10, "Arguments For (Why it may be TRUE):", ln=True)
         for item in context_tree.get("why_it_may_be_true", []):
-            add_section(f"- {item.get('weight', 'N/A')} Weight:", f"Reason: {item.get('reason')}\nEvidence: {item.get('evidence')}")
+            reason_text = f"Reason: {item.get('reason')}"
+            if item.get('explanation'):
+                 reason_text += f"\nExplanation: {item.get('explanation')}"
+            reason_text += f"\nEvidence: {item.get('evidence')}"
+            
+            add_section(f"- {item.get('weight', 'N/A')} Weight:", reason_text)
+
 
         # Arguments AGAINST
         pdf.set_font("helvetica", "B", 12)
         pdf.set_text_color(200, 0, 0)
         pdf.cell(0, 10, "Arguments Against (Why it may be FALSE):", ln=True)
         for item in context_tree.get("why_it_may_be_false", []):
-            add_section(f"- {item.get('weight', 'N/A')} Weight:", f"Reason: {item.get('reason')}\nEvidence: {item.get('evidence')}")
+            reason_text = f"Reason: {item.get('reason')}"
+            if item.get('explanation'):
+                 reason_text += f"\nExplanation: {item.get('explanation')}"
+            reason_text += f"\nEvidence: {item.get('evidence')}"
+            
+            add_section(f"- {item.get('weight', 'N/A')} Weight:", reason_text)
 
-    # Save the file
+    
+
     file_path = os.path.join(REPORTS_DIR, f"NuanceNode_Report_{chat_id}.pdf")
     pdf.output(file_path)
     return file_path

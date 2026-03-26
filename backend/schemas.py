@@ -44,6 +44,7 @@ class ClaimResponse(BaseModel):
 class ChatHistoryResponse(BaseModel):
     id: int
     claim: str
+    analysis_report: str
     created_at: datetime
 
     class Config:

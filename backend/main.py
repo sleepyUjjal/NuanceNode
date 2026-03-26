@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from typing import List
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -93,11 +94,12 @@ def login_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 @app.post("/analyze-claim")
 def analyze_claim(request: schemas.ClaimRequest, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Analyze a claim using LLM, save to DB, and return data + download link."""
-    # 1. Analyze claim via LLM
+    
+    # Claim analysis using LLM service
     analysis_result = llm_service.analyze_claim_with_context_tree(request.claim)
     analysis_report_str = json.dumps(analysis_result)
 
-    # 2. Save chat to database
+    # Save chat and analysis report to DB
     new_chat = models.Chat(
         claim=request.claim,
         analysis_report=analysis_report_str,
@@ -107,10 +109,10 @@ def analyze_claim(request: schemas.ClaimRequest, current_user: models.User = Dep
     db.commit()
     db.refresh(new_chat)
 
-    # 3. Generate PDF download link via service
+    # Generate PDF and get download link
     pdf_url = link_service.get_pdf_download_link(new_chat.id)
 
-    # 4. Return combined response
+    # Return analysis result and PDF link
     return {
         "id": new_chat.id,
         "claim": new_chat.claim,
@@ -128,35 +130,54 @@ def get_user_history(current_user: models.User = Depends(get_current_user), db: 
 # DOWNLOAD REPORT ROUTE
 # ---------------------------------------------------------
 
+
+
 @app.get("/report/{chat_id}/download")
 def download_pdf_report(
     chat_id: int, 
-    current_user: models.User = Depends(get_current_user), 
+    token: str,
     db: Session = Depends(get_db)
 ):
     """Generate and download a PDF report for a specific chat."""
-    # Fetch chat from DB
+    
+    # JWT verification and user validation
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    current_user = db.query(models.User).filter(models.User.email == email).first()
+    if not current_user:
+         raise HTTPException(status_code=401, detail="User not found")
+
+    # Fetch chat and report data
     chat = db.query(models.Chat).filter(models.Chat.id == chat_id, models.Chat.user_id == current_user.id).first()
     if not chat:
         raise HTTPException(status_code=404, detail="Report not found or unauthorized")
     
-    # Parse stored JSON
+    # Parse stored analysis report
     try:
         report_data = json.loads(chat.analysis_report)
     except Exception:
         raise HTTPException(status_code=500, detail="Stored report data is corrupted.")
 
-    # Generate PDF
+    # Generate PDF report
     try:
         pdf_path = pdf_service.generate_pdf_report(chat.id, chat.claim, report_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
 
-    # Return file response
+    # Serve PDF file if it exists
     if os.path.exists(pdf_path):
+
+        safe_claim = re.sub(r'[^a-zA-Z0-9]', '_', chat.claim)[:40].strip('_')
+
         return FileResponse(
             path=pdf_path, 
-            filename=f"NuanceNode_Report_{chat_id}.pdf", 
+            filename=f"NuanceNode_Report_{safe_claim}.pdf", 
             media_type="application/pdf"
         )
     else:

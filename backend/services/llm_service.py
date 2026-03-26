@@ -3,10 +3,10 @@ from langchain_community.chat_models import ChatOllama
 from langchain_core.prompts import PromptTemplate
 from langchain_community.tools import DuckDuckGoSearchRun
 
-# Initialize Search Tool
+
+
 search_tool = DuckDuckGoSearchRun()
 
-# Faster + optimized Ollama model
 llm = ChatOllama(
     model="mistral:7b",
     temperature=0.1,
@@ -18,7 +18,6 @@ def analyze_claim_with_context_tree(claim: str) -> dict:
     Analyze a claim using a 4-node context tree with faster performance.
     """
 
-    # Get search results
     try:
         search_results = search_tool.invoke(claim)[:1000]
     except Exception:
@@ -39,7 +38,6 @@ Rules:
 - Blogs/social media ≠ strong evidence
 
 Analyze:
-
 1. facts → Only widely supported, verifiable facts  
 2. sources → Classify: trusted (research, govt, major news) vs weak (blogs, opinion)  
 3. logic_analysis → Detect exaggeration, fear-mongering, pseudo-science  
@@ -51,10 +49,9 @@ Decision rules:
 - Only weak sources supporting → Likely False  
 
 Output STRICT JSON:
-
 {{
   "verdict": "",
-  "confidence_score": 0,
+  "confidence_score": 0, // MUST be an integer from 0 to 100
   "facts": "",
   "sources": "",
   "logic_analysis": "",
@@ -63,6 +60,7 @@ Output STRICT JSON:
     "why_it_may_be_true": [
       {{
         "reason": "",
+        "explanation": "", // Provide a detailed 2-3 sentence explanation of the reason
         "weight": "Weak",
         "evidence": ""
       }}
@@ -70,6 +68,7 @@ Output STRICT JSON:
     "why_it_may_be_false": [
       {{
         "reason": "",
+        "explanation": "", // Provide a detailed 2-3 sentence explanation of the reason
         "weight": "Strong",
         "evidence": ""
       }}
@@ -91,14 +90,21 @@ Output STRICT JSON:
             "search_results": search_results
         })
 
-        # Try parsing response
+        
         content = response.content.strip()
 
-        # Fix common JSON issues
+        # Fix JSON issues
         if content.startswith("```"):
             content = content.split("```")[1]
+            if content.startswith("json"):
+                content = content[4:]
 
         result_dict = json.loads(content)
+
+        score = result_dict.get("confidence_score", 0)
+        if isinstance(score, float) and score <= 1.0:
+            result_dict["confidence_score"] = int(score * 100)
+            
         return result_dict
 
     except json.JSONDecodeError:

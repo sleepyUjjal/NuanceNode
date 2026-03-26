@@ -5,9 +5,9 @@ const API = "http://127.0.0.1:8000";
 /* ─── Google Fonts ─────────────────────────────────────────── */
 const FontLoader = () => (
   <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;500;600&family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
       --bg:         #08080d;
@@ -245,7 +245,7 @@ function HistoryPanel({ token, onSelectReport, activeId }) {
 
   if (loading) return (
     <div style={{ padding: 24 }}>
-      {[1,2,3].map(i => (
+      {[1, 2, 3].map(i => (
         <div key={i} style={{
           height: 58, borderRadius: 8, background: "var(--border)",
           marginBottom: 10, animation: "pulse 1.5s ease infinite",
@@ -328,6 +328,11 @@ function ContextTree({ tree }) {
       <div style={{ fontSize: 14, color: "var(--text)", marginBottom: 8, lineHeight: 1.6 }}>
         {item.reason}
       </div>
+      {item.explanation && (
+        <div style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 8, lineHeight: 1.5 }}>
+          {item.explanation}
+        </div>
+      )}
       {item.evidence && (
         <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--text-dim)", borderTop: "1px solid var(--border)", paddingTop: 8, lineHeight: 1.6 }}>
           ↳ {item.evidence}
@@ -364,6 +369,8 @@ function ReportView({ report, token }) {
   const { id, claim, report: data, pdf_download_link } = report;
   const vColor = verdictColor(data?.verdict);
 
+  const authenticatedPdfLink = `${pdf_download_link}?token=${token}`;
+
   const nodes = [
     { label: "Facts Node", icon: "◎", key: "facts" },
     { label: "Sources Node", icon: "◉", key: "sources" },
@@ -392,7 +399,7 @@ function ReportView({ report, token }) {
         <ConfidenceMeter score={data?.confidence_score || 0} />
         <div style={{ marginTop: 16 }}>
           <a
-            href={pdf_download_link}
+            href={authenticatedPdfLink}
             target="_blank" rel="noopener noreferrer"
             style={{
               display: "inline-flex", alignItems: "center", gap: 8,
@@ -466,10 +473,21 @@ function Dashboard({ token, onLogout }) {
       const item = history.find(h => h.id === id);
       if (!item) return;
       // We only have basic info in history — show a minimal "loading" view
+
+      let parsedReport = {};
+      try {
+        if (item.analysis_report) {
+          parsedReport = JSON.parse(item.analysis_report);
+        }
+      }
+      catch (e) {
+        console.error("Failed to parse analysis report:", e);
+      }
+
       setCurrentReport({
         id: item.id,
         claim: item.claim,
-        report: { verdict: "View from history — re-analyze for full report", confidence_score: 0 },
+        report: parsedReport,
         pdf_download_link: `${API}/report/${item.id}/download`
       });
     } catch (err) {
@@ -564,7 +582,7 @@ function Dashboard({ token, onLogout }) {
                   <textarea
                     value={claim}
                     onChange={e => setClaim(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitClaim(e); }}}
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitClaim(e); } }}
                     placeholder="e.g. Scientists confirm 5G towers cause COVID-19 symptoms…"
                     rows={3}
                     style={{

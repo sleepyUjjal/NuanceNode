@@ -1,14 +1,17 @@
-from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 # -----------------------------
 # 1. USER SCHEMAS (Auth)
 # -----------------------------
 
 class UserCreate(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     email: EmailStr
-    password: str
+    password: str = Field(min_length=8, max_length=128)
 
 class UserResponse(BaseModel):
     id: int
@@ -30,7 +33,9 @@ class TokenData(BaseModel):
 # -----------------------------
 
 class ClaimRequest(BaseModel):
-    claim: str
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    claim: str = Field(min_length=5, max_length=5000)
 
 class ClaimResponse(BaseModel):
     chat_id: int

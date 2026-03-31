@@ -1,16 +1,21 @@
 import os
 from datetime import datetime, timedelta
+from pathlib import Path
+
 from jose import jwt
 from passlib.context import CryptContext
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 # JWT Configurations (from .env with defaults)
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "fallback-secret-key")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRATION_TIME_MINUTES", "1440"))
+
+if not SECRET_KEY:
+    raise RuntimeError("JWT_SECRET_KEY must be set before starting the backend.")
 
 # Password Hashing Setup (Using bcrypt algorithm)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

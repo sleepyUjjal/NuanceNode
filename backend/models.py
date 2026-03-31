@@ -1,7 +1,11 @@
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from database import Base
+
+try:
+    from .database import Base
+except ImportError:
+    from database import Base
 
 class User(Base):
     __tablename__ = "users"
@@ -12,6 +16,8 @@ class User(Base):
 
     # Relationship: 1 user : n chats. Delete chats on deleting user (cascade delete) 
     chats = relationship("Chat", back_populates="owner", cascade="all, delete-orphan")
+
+
 class Chat(Base):
     __tablename__ = "chats"
 
@@ -21,7 +27,7 @@ class Chat(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Foreign Key: Connecting chat to its owner (User)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
 
     # Relationship: Each chat belongs to one user. Back-populates to "chats" in User model.
     owner = relationship("User", back_populates="chats")

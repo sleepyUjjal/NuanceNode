@@ -1,24 +1,45 @@
-import os
 import json
+import logging
 import re
+from contextlib import asynccontextmanager
 from typing import List
-from fastapi import FastAPI, Depends, HTTPException, status
+
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import FileResponse
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from jose import jwt, JWTError
 
-# Internal modules
-import models, schemas
-from database import engine, get_db
-from services import user_service, llm_service, pdf_service, link_service
-from services.user_service import SECRET_KEY, ALGORITHM
+try:
+    from . import models, schemas
+    from .database import engine, get_db
+    from .services import link_service, llm_service, pdf_service, user_service
+    from .services.user_service import ALGORITHM, SECRET_KEY
+except ImportError:
+    import models, schemas
+    from database import engine, get_db
+    from services import link_service, llm_service, pdf_service, user_service
+    from services.user_service import ALGORITHM, SECRET_KEY
 
-# Initialize DB tables
-models.Base.metadata.create_all(bind=engine)
+logger = logging.getLogger(__name__)
 
-app = FastAPI(title="NuanceNode API")
+
+def init_database() -> None:
+    try:
+        models.Base.metadata.create_all(bind=engine)
+    except SQLAlchemyError:
+        logger.exception("Database initialization failed. The API will start, but DB-backed routes may fail.")
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    init_database()
+    yield
+
+
+app = FastAPI(title="NuanceNode API", lifespan=lifespan)
 
 # CORS setup for frontend communication
 app.add_middleware(
@@ -96,7 +117,11 @@ def analyze_claim(request: schemas.ClaimRequest, current_user: models.User = Dep
     """Analyze a claim using LLM, save to DB, and return data + download link."""
     
     # Claim analysis using LLM service
-    analysis_result = llm_service.analyze_claim_with_context_tree(request.claim)
+    analysis_result = llm_service.analyze_claim_with_context_tree(
+        request.claim,
+        db=db,
+        user_id=current_user.id,
+    )
     analysis_report_str = json.dumps(analysis_result)
 
     # Save chat and analysis report to DB
@@ -134,24 +159,11 @@ def get_user_history(current_user: models.User = Depends(get_current_user), db: 
 
 @app.get("/report/{chat_id}/download")
 def download_pdf_report(
-    chat_id: int, 
-    token: str,
-    db: Session = Depends(get_db)
+    chat_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     """Generate and download a PDF report for a specific chat."""
-    
-    # JWT verification and user validation
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
-    current_user = db.query(models.User).filter(models.User.email == email).first()
-    if not current_user:
-         raise HTTPException(status_code=401, detail="User not found")
 
     # Fetch chat and report data
     chat = db.query(models.Chat).filter(models.Chat.id == chat_id, models.Chat.user_id == current_user.id).first()
@@ -171,12 +183,12 @@ def download_pdf_report(
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
 
     # Serve PDF file if it exists
-    if os.path.exists(pdf_path):
+    if pdf_path.exists():
 
         safe_claim = re.sub(r'[^a-zA-Z0-9]', '_', chat.claim)[:40].strip('_')
 
         return FileResponse(
-            path=pdf_path, 
+            path=pdf_path,
             filename=f"NuanceNode_Report_{safe_claim}.pdf", 
             media_type="application/pdf"
         )

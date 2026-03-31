@@ -1,7 +1,25 @@
+import { useEffect, useMemo, useState } from "react";
+
 import Spinner from "./Spinner.jsx";
 import { analysisPhases } from "./analysisPhases.js";
 
 export default function PhaseLoader({ claim, phaseIndex }) {
+  const currentPhase = analysisPhases[phaseIndex] || analysisPhases[0];
+  const phaseActivities = useMemo(() => currentPhase.activities || [], [currentPhase]);
+  const [activeActivityIndex, setActiveActivityIndex] = useState(0);
+
+  useEffect(() => {
+    if (phaseActivities.length <= 1) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setActiveActivityIndex((current) => (current + 1) % phaseActivities.length);
+    }, 1100);
+
+    return () => window.clearInterval(intervalId);
+  }, [phaseActivities]);
+
   return (
     <div className="fade-up-3" style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px" }}>
       <div
@@ -35,7 +53,7 @@ export default function PhaseLoader({ claim, phaseIndex }) {
                 Analysis In Progress
               </div>
               <div style={{ fontFamily: "var(--serif)", fontSize: 26, color: "var(--text)", lineHeight: 1.2 }}>
-                {analysisPhases[phaseIndex]?.label}
+                {currentPhase.label}
               </div>
             </div>
             <Spinner />
@@ -50,7 +68,7 @@ export default function PhaseLoader({ claim, phaseIndex }) {
               maxWidth: 720,
             }}
           >
-            {analysisPhases[phaseIndex]?.detail}
+            {currentPhase.detail}
           </div>
           <div
             style={{
@@ -197,10 +215,81 @@ export default function PhaseLoader({ claim, phaseIndex }) {
                     marginBottom: 10,
                   }}
                 >
-                  Working Notes
+                  Live Analysis Feed
                 </div>
-                <div style={{ fontSize: 13.5, color: "var(--text-dim)", lineHeight: 1.7 }}>
-                  Local models can take a bit longer while they search, reason, and synthesize. The report will appear automatically when the final step completes.
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    background: "rgba(201,168,76,0.07)",
+                    border: "1px solid rgba(201,168,76,0.18)",
+                    marginBottom: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background: "var(--gold)",
+                      boxShadow: "0 0 14px rgba(201,168,76,0.45)",
+                      animation: "pulse 1.4s ease-in-out infinite",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <div style={{ fontSize: 13.5, color: "var(--text)", lineHeight: 1.65 }}>
+                    {phaseActivities[activeActivityIndex] || currentPhase.detail}
+                  </div>
+                </div>
+                <div style={{ display: "grid", gap: 8 }}>
+                  {phaseActivities.map((activity, index) => {
+                    const isComplete = index < activeActivityIndex;
+                    const isActive = index === activeActivityIndex;
+
+                    return (
+                      <div
+                        key={activity}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          fontSize: 12.5,
+                          color: isActive ? "var(--text)" : isComplete ? "var(--green)" : "var(--text-faint)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 18,
+                            height: 18,
+                            borderRadius: "50%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                            fontFamily: "var(--mono)",
+                            fontSize: 10,
+                            background: isComplete
+                              ? "rgba(39,174,96,0.18)"
+                              : isActive
+                                ? "rgba(201,168,76,0.18)"
+                                : "rgba(255,255,255,0.04)",
+                            border: `1px solid ${
+                              isComplete ? "rgba(39,174,96,0.28)" : isActive ? "rgba(201,168,76,0.25)" : "var(--border)"
+                            }`,
+                          }}
+                        >
+                          {isComplete ? "✓" : isActive ? "•" : index + 1}
+                        </div>
+                        <div style={{ lineHeight: 1.5 }}>{activity}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ marginTop: 14, fontSize: 12.5, color: "var(--text-faint)", lineHeight: 1.65 }}>
+                  This is a stage-by-stage trace of observable work, not a hidden chain-of-thought dump. The report will appear automatically when synthesis is complete.
                 </div>
               </div>
 

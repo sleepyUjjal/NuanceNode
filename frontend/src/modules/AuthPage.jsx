@@ -140,7 +140,7 @@ export default function AuthPage({ onLogin }) {
         </div>
 
         <div style={{ textAlign: "center", marginTop: 20, fontFamily: "var(--mono)", fontSize: 11, color: "var(--text-faint)" }}>
-          Powered by local LLM + DuckDuckGo Search
+          Powered by local LLM + live web search
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { apiFetch } from "./api.js";
 import { analysisPhases } from "./analysisPhases.js";
@@ -16,6 +16,7 @@ export default function Dashboard({ token, onLogout }) {
   const [currentReport, setCurrentReport] = useState(null);
   const [historyKey, setHistoryKey] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const loadingStartedAt = useRef(0);
 
   const loadHistoryReport = useCallback(
     async (id) => {
@@ -55,6 +56,7 @@ export default function Dashboard({ token, onLogout }) {
     setLoading(true);
     setLoadingPhaseIndex(0);
     setCurrentReport(null);
+    loadingStartedAt.current = Date.now();
 
     try {
       const data = await apiFetch(
@@ -65,6 +67,15 @@ export default function Dashboard({ token, onLogout }) {
         },
         token,
       );
+      const minimumLoaderTimeMs = 2200;
+      const elapsedMs = Date.now() - loadingStartedAt.current;
+      if (elapsedMs < minimumLoaderTimeMs) {
+        await new Promise((resolve) => window.setTimeout(resolve, minimumLoaderTimeMs - elapsedMs));
+      }
+
+      setLoadingPhaseIndex(analysisPhases.length - 1);
+      await new Promise((resolve) => window.setTimeout(resolve, 900));
+
       setCurrentReport(data);
       setHistoryKey((value) => value + 1);
     } catch (err) {
@@ -80,15 +91,27 @@ export default function Dashboard({ token, onLogout }) {
       return undefined;
     }
 
-    const phaseDurations = [900, 1800, 2600, 3600, 4800];
-    const timers = phaseDurations.map((delay, index) =>
-      window.setTimeout(() => {
-        setLoadingPhaseIndex(index + 1);
-      }, delay),
-    );
+    const maxAutoPhaseIndex = Math.max(0, analysisPhases.length - 2);
+    let timeoutId;
+
+    const scheduleAdvance = (delay) => {
+      timeoutId = window.setTimeout(() => {
+        setLoadingPhaseIndex((current) => {
+          const next = Math.min(current + 1, maxAutoPhaseIndex);
+          if (next < maxAutoPhaseIndex) {
+            scheduleAdvance(1400);
+          }
+          return next;
+        });
+      }, delay);
+    };
+
+    scheduleAdvance(900);
 
     return () => {
-      timers.forEach((timer) => window.clearTimeout(timer));
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
     };
   }, [loading]);
 
@@ -305,7 +328,7 @@ export default function Dashboard({ token, onLogout }) {
           {currentReport ? (
             <ReportView report={currentReport} token={token} />
           ) : loading ? (
-            <PhaseLoader claim={claim.trim()} phaseIndex={loadingPhaseIndex} />
+            <PhaseLoader key={loadingPhaseIndex} claim={claim.trim()} phaseIndex={loadingPhaseIndex} />
           ) : (
             <div
               style={{

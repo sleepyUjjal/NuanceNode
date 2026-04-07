@@ -89,7 +89,7 @@ export default function Dashboard({ token, onLogout }) {
         token,
       );
       
-      const minimumLoaderTimeMs = 1500; // Reduced wait for better UX
+      const minimumLoaderTimeMs = 2500; // Smoother initial minimum loading wait
       const elapsedMs = Date.now() - loadingStartedAt.current;
       if (elapsedMs < minimumLoaderTimeMs) {
         await new Promise((resolve) => window.setTimeout(resolve, minimumLoaderTimeMs - elapsedMs));
@@ -121,14 +121,14 @@ export default function Dashboard({ token, onLogout }) {
         setLoadingPhaseIndex((current) => {
           const next = Math.min(current + 1, maxAutoPhaseIndex);
           if (next < maxAutoPhaseIndex) {
-            scheduleAdvance(1200); // Speed up fake phase loading
+            scheduleAdvance(1600); // Give users time to read the text
           }
           return next;
         });
       }, delay);
     };
 
-    scheduleAdvance(600);
+    scheduleAdvance(800);
 
     return () => {
       if (timeoutId) {
@@ -335,7 +335,7 @@ export default function Dashboard({ token, onLogout }) {
           {currentReport ? (
             <ReportView report={currentReport} token={token} />
           ) : loading ? (
-            <PhaseLoader key={loadingPhaseIndex} claim={claim.trim()} phaseIndex={loadingPhaseIndex} />
+            <PhaseLoader claim={claim.trim()} phaseIndex={loadingPhaseIndex} />
           ) : null}
         </div>
       </div>

@@ -3,7 +3,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict
 
-from langchain_community.chat_models import ChatOllama
+from langchain_ollama import ChatOllama
 
 from .context_tree_service import merge_node_outputs
 from .prompt_service import (

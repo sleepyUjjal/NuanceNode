@@ -5,6 +5,21 @@ import { apiFetch } from "./api.js";
 export default function HistoryPanel({ token, onSelectReport, onDeleteReport, activeId }) {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [itemToDelete, setItemToDelete] = useState(null);
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    try {
+      await apiFetch(`/history/${itemToDelete.id}`, { method: 'DELETE' }, token);
+      setHistory(h => h.filter(x => x.id !== itemToDelete.id));
+      if (onDeleteReport && activeId === itemToDelete.id) {
+        onDeleteReport(itemToDelete.id);
+      }
+    } catch (err) {
+      console.error("Failed to delete", err);
+    }
+    setItemToDelete(null);
+  };
 
   useEffect(() => {
     apiFetch("/history", {}, token)
@@ -44,6 +59,7 @@ export default function HistoryPanel({ token, onSelectReport, onDeleteReport, ac
   }
 
   return (
+    <>
     <div style={{ padding: "12px 0" }}>
       {history.map((item, index) => (
         <div key={item.id} className={`fade-up-${Math.min(index + 1, 5)}`} style={{ position: "relative" }}>
@@ -89,18 +105,7 @@ export default function HistoryPanel({ token, onSelectReport, onDeleteReport, ac
           <button
             onClick={async (e) => {
               e.stopPropagation();
-              if (window.confirm("Are you sure you want to delete this report?")) {
-                try {
-                  await apiFetch(`/history/${item.id}`, { method: 'DELETE' }, token);
-                  setHistory(h => h.filter(x => x.id !== item.id));
-                  if (onDeleteReport && activeId === item.id) {
-                    onDeleteReport(item.id);
-                  }
-                } catch (err) {
-                  console.error("Failed to delete", err);
-                  alert("Failed to delete report");
-                }
-              }
+              setItemToDelete(item);
             }}
             style={{
               position: "absolute",
@@ -137,5 +142,40 @@ export default function HistoryPanel({ token, onSelectReport, onDeleteReport, ac
         </div>
       ))}
     </div>
+
+    {itemToDelete && (
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center",
+        background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", padding: 24
+      }}>
+        <div className="fade-up" style={{
+          background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: 24, maxWidth: 360, width: "100%", textAlign: "center", boxShadow: "0 10px 40px rgba(0,0,0,0.5)"
+        }}>
+          <div style={{ fontFamily: "var(--serif)", fontSize: 20, color: "var(--text)", marginBottom: 12, fontWeight: 700 }}>Confirm Deletion</div>
+          <div style={{ fontFamily: "var(--body)", fontSize: 13, color: "var(--text-dim)", marginBottom: 24, lineHeight: 1.5 }}>
+            Are you sure you want to delete this analysis report? This action cannot be undone.
+          </div>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+            <button 
+              onClick={() => setItemToDelete(null)}
+              style={{ flex: 1, padding: "10px 16px", background: "none", border: "1px solid var(--border)", color: "var(--text)", borderRadius: 8, cursor: "pointer", fontFamily: "var(--mono)", fontSize: 12, transition: "background 0.2s" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#ffffff08"}
+              onMouseLeave={e => e.currentTarget.style.background = "none"}
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={confirmDelete}
+              style={{ flex: 1, padding: "10px 16px", background: "var(--red-dim)", border: "1px solid var(--red)", color: "var(--text)", borderRadius: 8, cursor: "pointer", fontFamily: "var(--mono)", fontSize: 12, transition: "background 0.2s" }}
+              onMouseEnter={e => e.currentTarget.style.background = "#c0392b"}
+              onMouseLeave={e => e.currentTarget.style.background = "var(--red-dim)"}
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

@@ -7,14 +7,18 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 # 1. USER SCHEMAS (Auth)
 # -----------------------------
 
-class UserCreate(BaseModel):
+class UserLogin(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
 
+class UserCreate(UserLogin):
+    full_name: str = Field(min_length=1, max_length=100)
+
 class UserResponse(BaseModel):
     id: str
+    full_name: str
     email: str
 
     class Config:

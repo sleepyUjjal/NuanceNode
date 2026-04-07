@@ -85,7 +85,7 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email is already registered")
     
     hashed_pwd = user_service.get_password_hash(user.password)
-    new_user = models.User(email=user.email, hashed_password=hashed_pwd)
+    new_user = models.User(full_name=user.full_name, email=user.email, hashed_password=hashed_pwd)
     
     db.add(new_user)
     db.commit()
@@ -93,7 +93,7 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 @app.post("/login", response_model=schemas.Token)
-def login_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+def login_user(user: schemas.UserLogin, db: Session = Depends(get_db)):
     """Authenticate user and return JWT."""
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     
@@ -104,7 +104,7 @@ def login_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    access_token = user_service.create_access_token(data={"sub": db_user.email})
+    access_token = user_service.create_access_token(data={"sub": db_user.email, "name": db_user.full_name})
     return {"access_token": access_token, "token_type": "bearer"}
 
 

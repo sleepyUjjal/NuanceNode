@@ -22,6 +22,7 @@ export default function Dashboard({ token, onLogout }) {
     if (!token) return "User";
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.name && payload.name.trim()) return payload.name;
       const email = payload.sub || "User";
       const name = email.split('@')[0];
       return name.charAt(0).toUpperCase() + name.slice(1);

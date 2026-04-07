@@ -5,6 +5,7 @@ import { btnPrimaryStyle, inputStyle } from "./sharedStyles.js";
 
 export default function AuthPage({ onLogin }) {
   const [mode, setMode] = useState("login");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -17,7 +18,7 @@ export default function AuthPage({ onLogin }) {
 
     try {
       if (mode === "register") {
-        await apiFetch("/register", { method: "POST", body: JSON.stringify({ email, password }) });
+        await apiFetch("/register", { method: "POST", body: JSON.stringify({ full_name: fullName, email, password }) });
         setMode("login");
         setError("Account created — please log in.");
       } else {
@@ -99,6 +100,16 @@ export default function AuthPage({ onLogin }) {
           </div>
 
           <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {mode === "register" && (
+              <input
+                type="text"
+                placeholder="Full Name"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+                required
+                style={inputStyle}
+              />
+            )}
             <input
               type="email"
               placeholder="Email address"

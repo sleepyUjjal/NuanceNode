@@ -2,10 +2,12 @@ import { useState } from "react";
 
 import AuthPage from "./modules/AuthPage.jsx";
 import Dashboard from "./modules/Dashboard.jsx";
+import LandingPage from "./modules/LandingPage.jsx";
 import FontLoader from "./modules/FontLoader.jsx";
 
 export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem("nn_token") || null);
+  const [authView, setAuthView] = useState("landing");
 
   function handleLogin(nextToken) {
     setToken(nextToken);
@@ -21,8 +23,10 @@ export default function App() {
       <FontLoader />
       {token ? (
         <Dashboard token={token} onLogout={handleLogout} />
+      ) : authView === "landing" ? (
+        <LandingPage onNavigate={setAuthView} />
       ) : (
-        <AuthPage onLogin={handleLogin} />
+        <AuthPage initialMode={authView} onLogin={handleLogin} onBack={() => setAuthView("landing")} />
       )}
     </>
   );

@@ -2,9 +2,10 @@ import { useState } from "react";
 
 import { apiFetch } from "./api.js";
 import { btnPrimaryStyle, inputStyle } from "./sharedStyles.js";
+import logo from "../assets/logo.webp";
 
-export default function AuthPage({ onLogin }) {
-  const [mode, setMode] = useState("login");
+export default function AuthPage({ initialMode = "login", onLogin, onBack }) {
+  const [mode, setMode] = useState(initialMode);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,7 +45,17 @@ export default function AuthPage({ onLogin }) {
         backgroundImage: "radial-gradient(ellipse 80% 60% at 50% 0%, #1a1520 0%, transparent 70%)",
       }}
     >
-      <div className="fade-up" style={{ width: "100%", maxWidth: 420, padding: "0 24px" }}>
+      <div className="fade-up" style={{ width: "100%", maxWidth: 420, padding: "0 24px", position: "relative" }}>
+        {onBack && (
+          <button
+            onClick={onBack}
+            style={{ position: "absolute", top: -40, left: 24, background: "none", border: "none", color: "var(--text-faint)", cursor: "pointer", fontFamily: "var(--mono)", fontSize: 12, padding: 0, transition: "color 0.2s" }}
+            onMouseEnter={e => e.currentTarget.style.color = "var(--text)"}
+            onMouseLeave={e => e.currentTarget.style.color = "var(--text-faint)"}
+          >
+            ← Back to Home
+          </button>
+        )}
         <div style={{ textAlign: "center", marginBottom: 48 }}>
           <div
             style={{
@@ -54,8 +65,13 @@ export default function AuthPage({ onLogin }) {
               letterSpacing: "-0.02em",
               color: "var(--text)",
               marginBottom: 6,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 12
             }}
           >
+            <img src={logo} alt="Logo" width="40" height="40" style={{ objectFit: "contain" }} />
             Nuance<span style={{ color: "var(--gold)" }}>Node</span>
           </div>
           <div

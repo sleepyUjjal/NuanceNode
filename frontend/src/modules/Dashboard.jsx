@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { apiFetch } from "./api.js";
 import { analysisPhases } from "./analysisPhases.js";
@@ -15,8 +15,20 @@ export default function Dashboard({ token, onLogout }) {
   const [error, setError] = useState("");
   const [currentReport, setCurrentReport] = useState(null);
   const [historyKey, setHistoryKey] = useState(0);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Hidden by default for drawer
   const loadingStartedAt = useRef(0);
+
+  const userEmail = useMemo(() => {
+    if (!token) return "User";
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const email = payload.sub || "User";
+      const name = email.split('@')[0];
+      return name.charAt(0).toUpperCase() + name.slice(1);
+    } catch(e) {
+      return "User";
+    }
+  }, [token]);
 
   const loadHistoryReport = useCallback(
     async (id) => {
@@ -40,6 +52,7 @@ export default function Dashboard({ token, onLogout }) {
           report: parsedReport,
           pdf_download_link: `/report/${item.id}/download`,
         });
+        setSidebarOpen(false); // auto close sidebar on mobile/selection
       } catch (err) {
         console.error(err);
         setError(err.message);
@@ -47,6 +60,13 @@ export default function Dashboard({ token, onLogout }) {
     },
     [token],
   );
+
+  const handleDeleteReport = useCallback((id) => {
+    if (currentReport?.id === id) {
+      setCurrentReport(null);
+      setClaim("");
+    }
+  }, [currentReport]);
 
   async function submitClaim(event) {
     event.preventDefault();
@@ -67,14 +87,15 @@ export default function Dashboard({ token, onLogout }) {
         },
         token,
       );
-      const minimumLoaderTimeMs = 2200;
+      
+      const minimumLoaderTimeMs = 1500; // Reduced wait for better UX
       const elapsedMs = Date.now() - loadingStartedAt.current;
       if (elapsedMs < minimumLoaderTimeMs) {
         await new Promise((resolve) => window.setTimeout(resolve, minimumLoaderTimeMs - elapsedMs));
       }
 
       setLoadingPhaseIndex(analysisPhases.length - 1);
-      await new Promise((resolve) => window.setTimeout(resolve, 900));
+      await new Promise((resolve) => window.setTimeout(resolve, 400));
 
       setCurrentReport(data);
       setHistoryKey((value) => value + 1);
@@ -99,14 +120,14 @@ export default function Dashboard({ token, onLogout }) {
         setLoadingPhaseIndex((current) => {
           const next = Math.min(current + 1, maxAutoPhaseIndex);
           if (next < maxAutoPhaseIndex) {
-            scheduleAdvance(1400);
+            scheduleAdvance(1200); // Speed up fake phase loading
           }
           return next;
         });
       }, delay);
     };
 
-    scheduleAdvance(900);
+    scheduleAdvance(600);
 
     return () => {
       if (timeoutId) {
@@ -116,68 +137,77 @@ export default function Dashboard({ token, onLogout }) {
   }, [loading]);
 
   return (
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", position: "relative" }}>
+      
+      {/* Drawer Backdrop */}
+      <div 
+        onClick={() => setSidebarOpen(false)}
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.5)",
+          backdropFilter: "blur(2px)",
+          opacity: sidebarOpen ? 1 : 0,
+          pointerEvents: sidebarOpen ? "auto" : "none",
+          transition: "all 0.3s ease",
+          zIndex: 40
+        }}
+      />
+
+      {/* Drawer Sidebar */}
       <div
         style={{
-          width: sidebarOpen ? 280 : 0,
-          flexShrink: 0,
+          position: "fixed",
+          top: 0, left: 0, bottom: 0,
+          width: 280,
+          zIndex: 50,
+          transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
           background: "var(--surface)",
           borderRight: "1px solid var(--border)",
           display: "flex",
           flexDirection: "column",
-          overflow: "hidden",
-          transition: "width 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+          boxShadow: sidebarOpen ? "5px 0 25px rgba(0,0,0,0.5)" : "none",
+          transition: "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s",
         }}
       >
-        <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid var(--border)", flexShrink: 0 }}>
-          <div style={{ fontFamily: "var(--serif)", fontSize: 22, fontWeight: 900, color: "var(--text)" }}>
-            Nuance<span style={{ color: "var(--gold)" }}>Node</span>
+        <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid var(--border)", flexShrink: 0, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontFamily: "var(--serif)", fontSize: 22, fontWeight: 900, color: "var(--text)" }}>
+              Nuance<span style={{ color: "var(--gold)" }}>Node</span>
+            </div>
+            <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--text-faint)", letterSpacing: "0.15em", textTransform: "uppercase", marginTop: 2 }}>
+              AI Fact Intelligence
+            </div>
           </div>
-          <div
-            style={{
-              fontFamily: "var(--mono)",
-              fontSize: 10,
-              color: "var(--text-faint)",
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
-              marginTop: 2,
-            }}
+          <button 
+            onClick={() => setSidebarOpen(false)}
+            style={{ background: "transparent", border: "none", color: "var(--text-faint)", cursor: "pointer", fontSize: 20 }}
           >
-            AI Fact Intelligence
-          </div>
+            ✕
+          </button>
         </div>
 
         <div style={{ flex: 1, overflowY: "auto" }}>
-          <div
-            style={{
-              padding: "14px 20px 6px",
-              fontFamily: "var(--mono)",
-              fontSize: 10,
-              color: "var(--text-faint)",
-              letterSpacing: "0.15em",
-              textTransform: "uppercase",
-            }}
-          >
+          <div style={{ padding: "14px 20px 6px", fontFamily: "var(--mono)", fontSize: 10, color: "var(--text-faint)", letterSpacing: "0.15em", textTransform: "uppercase" }}>
             History
           </div>
-          <HistoryPanel key={historyKey} token={token} onSelectReport={loadHistoryReport} activeId={currentReport?.id} />
+          <HistoryPanel 
+            key={historyKey} 
+            token={token} 
+            onSelectReport={loadHistoryReport} 
+            onDeleteReport={handleDeleteReport}
+            activeId={currentReport?.id} 
+          />
         </div>
 
         <div style={{ padding: 16, borderTop: "1px solid var(--border)", flexShrink: 0 }}>
           <button
             onClick={onLogout}
             style={{
-              width: "100%",
-              background: "none",
-              border: "1px solid var(--border)",
-              color: "var(--text-dim)",
-              fontFamily: "var(--mono)",
-              fontSize: 12,
-              cursor: "pointer",
-              padding: "8px 12px",
-              borderRadius: 6,
-              transition: "all 0.2s",
-              letterSpacing: "0.05em",
+              width: "100%", background: "none", border: "1px solid var(--border)",
+              color: "var(--text-dim)", fontFamily: "var(--mono)", fontSize: 12,
+              cursor: "pointer", padding: "8px 12px", borderRadius: 6,
+              transition: "all 0.2s", letterSpacing: "0.05em",
             }}
             onMouseEnter={(event) => {
               event.currentTarget.style.borderColor = "var(--red)";
@@ -193,64 +223,62 @@ export default function Dashboard({ token, onLogout }) {
         </div>
       </div>
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <div
-          style={{
-            height: 56,
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            padding: "0 24px",
-            borderBottom: "1px solid var(--border)",
-            background: "var(--bg)",
-            gap: 16,
-          }}
-        >
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--bg)" }}>
+        <div style={{ height: 56, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 24px", borderBottom: "1px solid var(--border)", gap: 16 }}>
           <button
-            onClick={() => setSidebarOpen((open) => !open)}
+            onClick={() => setSidebarOpen(true)}
             style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--text-faint)",
-              fontSize: 18,
-              lineHeight: 1,
-              padding: 4,
-              transition: "color 0.15s",
+              background: "none", border: "none", cursor: "pointer",
+              color: "var(--text-faint)", fontSize: 18, padding: 4, transition: "color 0.15s",
             }}
-            onMouseEnter={(event) => {
-              event.currentTarget.style.color = "var(--text)";
-            }}
-            onMouseLeave={(event) => {
-              event.currentTarget.style.color = "var(--text-faint)";
-            }}
+            onMouseEnter={(event) => event.currentTarget.style.color = "var(--text)"}
+            onMouseLeave={(event) => event.currentTarget.style.color = "var(--text-faint)"}
           >
             ☰
           </button>
           <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--text-faint)" }}>
-            {currentReport ? `Report #${currentReport.id}` : "New Analysis"}
+            {currentReport ? `Analysis Report` : "New Analysis"}
           </span>
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", background: "var(--bg)" }}>
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
           <div
             style={{
-              padding: "40px 24px 24px",
-              borderBottom: "1px solid var(--border)",
-              background: "var(--bg)",
+              padding: (!currentReport && !loading) ? "0 24px" : "40px 24px 24px",
+              borderBottom: (!currentReport && !loading) ? "none" : "1px solid var(--border)",
+              flex: (!currentReport && !loading) ? 1 : "0 0 auto",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: (!currentReport && !loading) ? "center" : "flex-start",
               backgroundImage: "radial-gradient(ellipse 100% 200% at 50% -50%, #1a1520 0%, transparent 70%)",
             }}
           >
-            <div style={{ maxWidth: 760, margin: "0 auto" }}>
-              <div className="fade-up" style={{ fontFamily: "var(--serif)", fontSize: 28, fontWeight: 700, marginBottom: 8, color: "var(--text)", lineHeight: 1.25 }}>
+            <div style={{ maxWidth: 760, width: "100%", margin: "0 auto" }}>
+              {(!currentReport && !loading) && (
+                <div className="fade-up" style={{ 
+                  fontFamily: "var(--serif)", fontSize: 44, fontWeight: 700, marginBottom: 16, 
+                  background: "linear-gradient(90deg, #c9a84c, #fff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                  textAlign: "center"
+                }}>
+                  Hello, {userEmail}
+                </div>
+              )}
+              <div className="fade-up-1" style={{ 
+                fontFamily: "var(--serif)", fontSize: (!currentReport && !loading) ? 20 : 28, 
+                fontWeight: 700, marginBottom: 8, color: "var(--text)", lineHeight: 1.25,
+                textAlign: (!currentReport && !loading) ? "center" : "left"
+              }}>
                 What claim should we investigate?
               </div>
-              <div className="fade-up-1" style={{ fontFamily: "var(--body)", fontSize: 14, color: "var(--text-dim)", marginBottom: 24, fontStyle: "italic" }}>
+              <div className="fade-up-2" style={{ 
+                fontFamily: "var(--body)", fontSize: 14, color: "var(--text-dim)", marginBottom: 24, fontStyle: "italic",
+                textAlign: (!currentReport && !loading) ? "center" : "left"
+              }}>
                 Enter a news headline, viral post, or statement to analyze with the 4-Node Context Tree.
               </div>
 
-              <form onSubmit={submitClaim} className="fade-up-2">
-                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <form onSubmit={submitClaim} className="fade-up-3">
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start", margin: (!currentReport && !loading) ? "0 auto" : "0", maxWidth: 760 }}>
                   <textarea
                     value={claim}
                     onChange={(event) => setClaim(event.target.value)}
@@ -261,16 +289,15 @@ export default function Dashboard({ token, onLogout }) {
                       }
                     }}
                     placeholder="e.g. Scientists confirm 5G towers cause COVID-19 symptoms…"
-                    rows={3}
+                    rows={(!currentReport && !loading) ? 4 : 3}
                     minLength={5}
                     maxLength={5000}
                     style={{
                       ...inputStyle,
-                      flex: 1,
-                      resize: "none",
-                      fontFamily: "var(--body)",
-                      fontSize: 14,
-                      lineHeight: 1.6,
+                      flex: 1, resize: "none", fontFamily: "var(--body)", fontSize: 14, lineHeight: 1.6,
+                      padding: 16,
+                      borderRadius: 12,
+                      boxShadow: (!currentReport && !loading) ? "0 4px 12px rgba(0,0,0,0.3)" : "none",
                     }}
                     disabled={loading}
                   />
@@ -279,44 +306,23 @@ export default function Dashboard({ token, onLogout }) {
                     disabled={loading || !claim.trim()}
                     style={{
                       ...btnPrimaryStyle,
-                      width: 100,
-                      flexShrink: 0,
-                      height: 86,
-                      fontSize: 13,
+                      width: 100, flexShrink: 0, height: (!currentReport && !loading) ? 104 : 86, fontSize: 13,
                       cursor: loading ? "not-allowed" : "pointer",
+                      borderRadius: 12,
                     }}
                   >
                     {loading ? "…" : "Analyze →"}
                   </button>
                 </div>
                 {error && (
-                  <div
-                    style={{
-                      marginTop: 12,
-                      fontFamily: "var(--mono)",
-                      fontSize: 12,
-                      color: "var(--red)",
-                      padding: "8px 14px",
-                      background: "var(--red-dim)",
-                      borderRadius: 6,
-                      borderLeft: "3px solid var(--red)",
-                    }}
-                  >
+                  <div style={{ marginTop: 12, fontFamily: "var(--mono)", fontSize: 12, color: "var(--red)", padding: "8px 14px", background: "var(--red-dim)", borderRadius: 6, borderLeft: "3px solid var(--red)" }}>
                     ✕ {error}
                   </div>
                 )}
                 {loading && (
                   <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                     <Spinner />
-                    <div
-                      style={{
-                        fontFamily: "var(--mono)",
-                        fontSize: 11,
-                        color: "var(--text-faint)",
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                      }}
-                    >
+                    <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--text-faint)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                       Step {loadingPhaseIndex + 1} of {analysisPhases.length}
                     </div>
                   </div>
@@ -329,24 +335,7 @@ export default function Dashboard({ token, onLogout }) {
             <ReportView report={currentReport} token={token} />
           ) : loading ? (
             <PhaseLoader key={loadingPhaseIndex} claim={claim.trim()} phaseIndex={loadingPhaseIndex} />
-          ) : (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                minHeight: 360,
-                padding: 40,
-                textAlign: "center",
-              }}
-            >
-              <div style={{ fontFamily: "var(--serif)", fontSize: 56, marginBottom: 16, opacity: 0.08 }}>⊕</div>
-              <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--text-faint)", letterSpacing: "0.1em" }}>
-                Submit a claim to begin investigation
-              </div>
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

@@ -14,7 +14,7 @@ class UserCreate(BaseModel):
     password: str = Field(min_length=8, max_length=128)
 
 class UserResponse(BaseModel):
-    id: int
+    id: str
     email: str
 
     class Config:
@@ -38,7 +38,7 @@ class ClaimRequest(BaseModel):
     claim: str = Field(min_length=5, max_length=5000)
 
 class ClaimResponse(BaseModel):
-    chat_id: int
+    chat_id: str
     claim: str
     analysis_report: str
     created_at: datetime
@@ -47,7 +47,7 @@ class ClaimResponse(BaseModel):
         from_attributes = True
 
 class ChatHistoryResponse(BaseModel):
-    id: int
+    id: str
     claim: str
     analysis_report: str
     created_at: datetime

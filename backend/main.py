@@ -150,6 +150,16 @@ def get_user_history(current_user: models.User = Depends(get_current_user), db: 
     """Fetch user's past analyzed claims."""
     return db.query(models.Chat).filter(models.Chat.user_id == current_user.id).order_by(models.Chat.created_at.desc()).all()
 
+@app.delete("/history/{chat_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_chat(chat_id: str, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Delete a chat from user's history."""
+    chat = db.query(models.Chat).filter(models.Chat.id == chat_id, models.Chat.user_id == current_user.id).first()
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found or unauthorized")
+    db.delete(chat)
+    db.commit()
+    return None
+
 
 # ---------------------------------------------------------
 # DOWNLOAD REPORT ROUTE
@@ -159,7 +169,7 @@ def get_user_history(current_user: models.User = Depends(get_current_user), db: 
 
 @app.get("/report/{chat_id}/download")
 def download_pdf_report(
-    chat_id: int,
+    chat_id: str,
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

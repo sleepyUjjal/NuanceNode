@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from typing import Any, Dict, List
 
 from sqlalchemy.orm import Session
@@ -58,11 +59,21 @@ def _extract_report_summary(report_data: Any) -> str:
     return _truncate(_safe_text(report_data), 700)
 
 
+def _recency_bonus(chat: models.Chat) -> int:
+    created_at = getattr(chat, "created_at", None)
+    if isinstance(created_at, datetime):
+        try:
+            return int(created_at.timestamp())
+        except Exception:
+            return 0
+    return 0
+
+
 def _score_chat_match(claim: str, chat: models.Chat) -> int:
     claim_terms = {term for term in claim.lower().split() if len(term) > 3}
     combined_text = f"{chat.claim or ''} {chat.analysis_report or ''}".lower()
     overlap = sum(1 for term in claim_terms if term in combined_text)
-    recency_bonus = int(getattr(chat, "id", 0) or 0)
+    recency_bonus = _recency_bonus(chat)
     return overlap * 1000 + recency_bonus
 
 

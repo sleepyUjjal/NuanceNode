@@ -1,8 +1,11 @@
 import json
+import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from typing import Any, Dict
 
+from dotenv import load_dotenv
 from langchain_ollama import ChatOllama
 
 from .context_tree_service import merge_node_outputs
@@ -17,17 +20,29 @@ from .prompt_service import (
 from .rag_service import build_claim_rag_context
 from .search_service import fetch_claim_search_context
 
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL = os.getenv("OLLAMA_MODEL", "mistral:7b")
 DEFAULT_TEMPERATURE = float(os.getenv("OLLAMA_TEMPERATURE", "0.1"))
 DEFAULT_NUM_CTX = int(os.getenv("OLLAMA_NUM_CTX", "4096"))
+DEFAULT_OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+DEFAULT_OLLAMA_API_KEY = os.getenv("OLLAMA_API_KEY") or os.getenv("API_KEY")
+DEFAULT_OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "120"))
 
 
 def _get_llm() -> ChatOllama:
+    headers = None
+    if DEFAULT_OLLAMA_API_KEY:
+        headers = {"Authorization": f"Bearer {DEFAULT_OLLAMA_API_KEY}"}
+
     return ChatOllama(
+        base_url=DEFAULT_OLLAMA_BASE_URL,
         model=DEFAULT_MODEL,
         temperature=DEFAULT_TEMPERATURE,
         num_ctx=DEFAULT_NUM_CTX,
+        timeout=DEFAULT_OLLAMA_TIMEOUT,
+        headers=headers,
     )
 
 
@@ -137,14 +152,19 @@ def _normalize_confidence(value: Any) -> int:
         return 0
 
 
-def _invoke_json_prompt(prompt_text: str, fallback: Dict[str, Any]) -> Dict[str, Any]:
+def _invoke_json_prompt(prompt_text: str, fallback: Dict[str, Any], node_name: str) -> Dict[str, Any]:
     try:
         llm = _get_llm()
         response = llm.invoke(prompt_text)
         content = getattr(response, "content", "") or ""
-        return parse_json_response(content, fallback)
-    except Exception:
-        return fallback
+        parsed = parse_json_response(content, fallback)
+        parsed.setdefault("_error", "")
+        return parsed
+    except Exception as exc:
+        logger.exception("LLM invocation failed for %s", node_name)
+        failed = dict(fallback)
+        failed["_error"] = f"{node_name} failed: {exc.__class__.__name__}: {str(exc).strip() or 'unknown error'}"
+        return failed
 
 
 def _build_evidence_summary(facts_node: Dict[str, Any], sources_node: Dict[str, Any]) -> str:
@@ -176,7 +196,7 @@ def _run_facts_node(claim: str, rag_context: Dict[str, Any] | None = None) -> Di
     rag_context = rag_context or {}
     fallback = _default_facts_node(rag_context)
     prompt_text = build_facts_prompt(claim, rag_context.get("retrieval_summary", ""))
-    facts_node = _invoke_json_prompt(prompt_text, fallback)
+    facts_node = _invoke_json_prompt(prompt_text, fallback, "facts_node")
     if "summary" not in facts_node:
         facts_node["summary"] = fallback["summary"]
     facts_node.setdefault("key_points", [])
@@ -192,7 +212,7 @@ def _run_sources_node(claim: str) -> tuple[Dict[str, Any], Dict[str, Any]]:
     search_context = fetch_claim_search_context(claim)
     fallback = _default_sources_node(search_context)
     prompt_text = build_sources_prompt(claim, search_context.get("summarized_results", ""))
-    sources_node = _invoke_json_prompt(prompt_text, fallback)
+    sources_node = _invoke_json_prompt(prompt_text, fallback, "sources_node")
     if "summary" not in sources_node:
         sources_node["summary"] = fallback["summary"]
     sources_node.setdefault("trusted_sources", [])
@@ -207,7 +227,7 @@ def _run_sources_node(claim: str) -> tuple[Dict[str, Any], Dict[str, Any]]:
 def _run_logic_node(claim: str, evidence_summary: str = "") -> Dict[str, Any]:
     fallback = _default_logic_node()
     prompt_text = build_logic_prompt(claim, evidence_summary)
-    logic_node = _invoke_json_prompt(prompt_text, fallback)
+    logic_node = _invoke_json_prompt(prompt_text, fallback, "logic_node")
     if "summary" not in logic_node:
         logic_node["summary"] = fallback["summary"]
     logic_node.setdefault("strengths", [])
@@ -221,7 +241,7 @@ def _run_logic_node(claim: str, evidence_summary: str = "") -> Dict[str, Any]:
 def _run_anatomy_node(claim: str, node_summaries: str) -> Dict[str, Any]:
     fallback = _default_anatomy_node()
     prompt_text = build_anatomy_prompt(claim, node_summaries)
-    anatomy_node = _invoke_json_prompt(prompt_text, fallback)
+    anatomy_node = _invoke_json_prompt(prompt_text, fallback, "anatomy_node")
     if "summary" not in anatomy_node:
         anatomy_node["summary"] = fallback["summary"]
     anatomy_node.setdefault("why_people_believe_it", [])
@@ -239,7 +259,7 @@ def _run_verdict_node(claim: str, merged_node_summary: str) -> Dict[str, Any]:
         "summary": "Fallback verdict due to model or parsing issues.",
     }
     prompt_text = build_verdict_prompt(claim, merged_node_summary)
-    verdict_node = _invoke_json_prompt(prompt_text, fallback)
+    verdict_node = _invoke_json_prompt(prompt_text, fallback, "verdict_node")
     verdict_node["confidence_score"] = _normalize_confidence(verdict_node.get("confidence_score", 35))
     verdict_node.setdefault("verdict", "Unverified")
     return verdict_node
@@ -264,6 +284,7 @@ def analyze_claim_with_context_tree(claim: str, db=None, user_id: int | None = N
         "summarized_results": "",
         "search_available": False,
         "search_provider": "unknown",
+        "error": "",
     }
 
     try:
@@ -321,10 +342,25 @@ def analyze_claim_with_context_tree(claim: str, db=None, user_id: int | None = N
         meta.setdefault("retrieval_count", rag_context.get("retrieval_count", 0))
         meta.setdefault("retrieval_strategy", rag_context.get("retrieval_strategy", "unknown"))
         meta.setdefault("search_provider", search_context.get("search_provider", "unknown"))
+        diagnostics = [
+            error
+            for error in [
+                facts_node.get("_error"),
+                sources_node.get("_error"),
+                logic_node.get("_error"),
+                anatomy_node.get("_error"),
+                verdict_node.get("_error"),
+                search_context.get("error"),
+            ]
+            if error
+        ]
+        meta["diagnostics"] = diagnostics
+        meta["partial_failure"] = bool(diagnostics)
 
         return merged
 
-    except Exception:
+    except Exception as exc:
+        logger.exception("Claim analysis failed")
         fallback = _default_verdict(claim)
         fallback["meta"]["model"] = DEFAULT_MODEL
         fallback["meta"]["rag_used"] = bool(rag_context.get("retrieval_count", 0))
@@ -332,4 +368,6 @@ def analyze_claim_with_context_tree(claim: str, db=None, user_id: int | None = N
         fallback["meta"]["retrieval_count"] = rag_context.get("retrieval_count", 0)
         fallback["meta"]["retrieval_strategy"] = rag_context.get("retrieval_strategy", "unknown")
         fallback["meta"]["search_provider"] = search_context.get("search_provider", "unknown")
+        fallback["meta"]["diagnostics"] = [f"analysis_failed: {exc.__class__.__name__}: {str(exc).strip() or 'unknown error'}"]
+        fallback["meta"]["partial_failure"] = True
         return fallback

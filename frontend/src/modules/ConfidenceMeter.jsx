@@ -1,7 +1,17 @@
 export default function ConfidenceMeter({ score }) {
   const normalizedScore = Math.max(0, Math.min(100, Number(score) || 0));
-  const hue = Math.round((normalizedScore / 100) * 120);
-  const color = `hsl(${hue}, 68%, 52%)`;
+  const color =
+    normalizedScore > 67
+      ? "#2db36d"
+      : normalizedScore < 33
+        ? "#d64545"
+        : "#d4a64b";
+  const trackTint =
+    normalizedScore > 67
+      ? "rgba(45,179,109,0.16)"
+      : normalizedScore < 33
+        ? "rgba(214,69,69,0.16)"
+        : "rgba(212,166,75,0.16)";
 
   return (
     <div style={{ marginTop: 16 }}>
@@ -24,7 +34,7 @@ export default function ConfidenceMeter({ score }) {
           height: 8,
           borderRadius: 999,
           overflow: "hidden",
-          background: "linear-gradient(90deg, rgba(214,69,69,0.16) 0%, rgba(212,166,75,0.16) 50%, rgba(45,179,109,0.16) 100%)",
+          background: "trackTint",
         }}
       >
         <div
@@ -32,8 +42,8 @@ export default function ConfidenceMeter({ score }) {
             height: "100%",
             width: `${normalizedScore}%`,
             borderRadius: 999,
-            background: "linear-gradient(90deg, #d64545 0%, #d4a64b 50%, #2db36d 100%)",
-            transition: "width 1s cubic-bezier(0.16, 1, 0.3, 1)",
+            background: color,
+            transition: "width 1s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease",
           }}
         />
         <div

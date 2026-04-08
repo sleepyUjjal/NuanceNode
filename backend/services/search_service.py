@@ -41,6 +41,7 @@ def fetch_claim_search_context(claim: str) -> Dict[str, Any]:
         "summarized_results": "No live search results available.",
         "search_available": False,
         "search_provider": "duckduckgo",
+        "error": "",
     }
 
     try:
@@ -52,7 +53,10 @@ def fetch_claim_search_context(claim: str) -> Dict[str, Any]:
             "summarized_results": _summarize_lines(raw_results),
             "search_available": True,
             "search_provider": "duckduckgo",
+            "error": "",
         }
     except Exception as exc:
-        fallback["raw_results"] = f"Search unavailable: {_normalize_text(exc)}"
+        message = _normalize_text(exc)
+        fallback["raw_results"] = f"Search unavailable: {message}"
+        fallback["error"] = message
         return fallback

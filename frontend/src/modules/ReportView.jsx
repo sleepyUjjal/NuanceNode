@@ -10,6 +10,7 @@ export default function ReportView({ report, token }) {
   const [downloadError, setDownloadError] = useState("");
   const [downloading, setDownloading] = useState(false);
   const vColor = verdictColor(data?.verdict);
+  const diagnostics = Array.isArray(data?.meta?.diagnostics) ? data.meta.diagnostics.filter(Boolean) : [];
 
   const handleDownload = useCallback(async () => {
     setDownloadError("");
@@ -113,6 +114,36 @@ export default function ReportView({ report, token }) {
             }}
           >
             ✕ {downloadError}
+          </div>
+        )}
+        {diagnostics.length > 0 && (
+          <div
+            style={{
+              marginTop: 12,
+              display: "grid",
+              gap: 8,
+              padding: "12px 14px",
+              background: "rgba(230, 126, 34, 0.12)",
+              border: "1px solid rgba(230, 126, 34, 0.32)",
+              borderRadius: 8,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: 11,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--amber)",
+              }}
+            >
+              Diagnostics
+            </div>
+            {diagnostics.map((item, index) => (
+              <div key={`${id}-diag-${index}`} style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.6 }}>
+                {item}
+              </div>
+            ))}
           </div>
         )}
       </div>

@@ -117,7 +117,6 @@ def login_user(user: schemas.UserLogin, db: Session = Depends(get_db)):
 def analyze_claim(request: schemas.ClaimRequest, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Analyze a claim using LLM, save to DB, and return data + download link."""
     
-    # Claim analysis using LLM service
     analysis_result = llm_service.analyze_claim_with_context_tree(
         request.claim,
         db=db,
@@ -125,7 +124,6 @@ def analyze_claim(request: schemas.ClaimRequest, current_user: models.User = Dep
     )
     analysis_report_str = json.dumps(analysis_result)
 
-    # Save chat and analysis report to DB
     new_chat = models.Chat(
         claim=request.claim,
         analysis_report=analysis_report_str,
@@ -135,10 +133,8 @@ def analyze_claim(request: schemas.ClaimRequest, current_user: models.User = Dep
     db.commit()
     db.refresh(new_chat)
 
-    # Generate PDF and get download link
     pdf_url = link_service.get_pdf_download_link(new_chat.id)
 
-    # Return analysis result and PDF link
     return {
         "id": new_chat.id,
         "claim": new_chat.claim,
@@ -176,24 +172,20 @@ def download_pdf_report(
 ):
     """Generate and download a PDF report for a specific chat."""
 
-    # Fetch chat and report data
     chat = db.query(models.Chat).filter(models.Chat.id == chat_id, models.Chat.user_id == current_user.id).first()
     if not chat:
         raise HTTPException(status_code=404, detail="Report not found or unauthorized")
     
-    # Parse stored analysis report
     try:
         report_data = json.loads(chat.analysis_report)
     except Exception:
         raise HTTPException(status_code=500, detail="Stored report data is corrupted.")
 
-    # Generate PDF report
     try:
         pdf_path = pdf_service.generate_pdf_report(chat.id, chat.claim, report_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
 
-    # Serve PDF file if it exists
     if pdf_path.exists():
 
         safe_claim = re.sub(r'[^a-zA-Z0-9]', '_', chat.claim)[:40].strip('_')

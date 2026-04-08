@@ -14,12 +14,6 @@ function NewspaperSVG({ size, color, opacity }) {
 }
 
 export default function LandingPage({ onNavigate }) {
-  const contactLinks = {
-    email: "mailto:ujjaldeep.work@gmail.com",
-    github: "https://github.com/sleepyUjjal",
-    linkedin: "https://www.linkedin.com/in/ujjaldeep/",
-  };
-
   function scrollToSection(sectionId) {
     const element = document.getElementById(sectionId);
     if (element) {

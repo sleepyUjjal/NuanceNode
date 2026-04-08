@@ -8,19 +8,19 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from jose import jwt, JWTError
+from sqlalchemy.orm import Session
 
 try:
     from . import models, schemas
     from .database import engine, get_db
-    from .services import link_service, llm_service, pdf_service, user_service
+    from .services import docs_service, link_service, llm_service, pdf_service, user_service
     from .services.user_service import ALGORITHM, SECRET_KEY
 except ImportError:
     import models, schemas
     from database import engine, get_db
-    from services import link_service, llm_service, pdf_service, user_service
+    from services import docs_service, link_service, llm_service, pdf_service, user_service
     from services.user_service import ALGORITHM, SECRET_KEY
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,8 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="NuanceNode API", lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, **docs_service.get_app_docs_config())
+docs_service.attach_custom_openapi(app)
 
 # CORS setup for frontend communication
 app.add_middleware(
@@ -78,7 +79,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 # AUTHENTICATION ROUTES
 # ---------------------------------------------------------
 
-@app.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
+@app.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED, tags=["Authentication"])
 def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     """Register a new user."""
     if db.query(models.User).filter(models.User.email == user.email).first():
@@ -92,7 +93,7 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-@app.post("/login", response_model=schemas.Token)
+@app.post("/login", response_model=schemas.Token, tags=["Authentication"])
 def login_user(user: schemas.UserLogin, db: Session = Depends(get_db)):
     """Authenticate user and return JWT."""
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
@@ -112,7 +113,7 @@ def login_user(user: schemas.UserLogin, db: Session = Depends(get_db)):
 # CORE AI ROUTES
 # ---------------------------------------------------------
 
-@app.post("/analyze-claim")
+@app.post("/analyze-claim", tags=["Analysis"])
 def analyze_claim(request: schemas.ClaimRequest, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Analyze a claim using LLM, save to DB, and return data + download link."""
     
@@ -145,12 +146,12 @@ def analyze_claim(request: schemas.ClaimRequest, current_user: models.User = Dep
         "pdf_download_link": pdf_url  
     }
 
-@app.get("/history", response_model=List[schemas.ChatHistoryResponse])
+@app.get("/history", response_model=List[schemas.ChatHistoryResponse], tags=["History"])
 def get_user_history(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Fetch user's past analyzed claims."""
     return db.query(models.Chat).filter(models.Chat.user_id == current_user.id).order_by(models.Chat.created_at.desc()).all()
 
-@app.delete("/history/{chat_id}", status_code=status.HTTP_204_NO_CONTENT)
+@app.delete("/history/{chat_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["History"])
 def delete_chat(chat_id: str, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Delete a chat from user's history."""
     chat = db.query(models.Chat).filter(models.Chat.id == chat_id, models.Chat.user_id == current_user.id).first()
@@ -167,7 +168,7 @@ def delete_chat(chat_id: str, current_user: models.User = Depends(get_current_us
 
 
 
-@app.get("/report/{chat_id}/download")
+@app.get("/report/{chat_id}/download", tags=["Reports"])
 def download_pdf_report(
     chat_id: str,
     current_user: models.User = Depends(get_current_user),
@@ -204,3 +205,13 @@ def download_pdf_report(
         )
     else:
         raise HTTPException(status_code=500, detail="PDF generation failed")
+
+
+@app.get("/openapi/download.json", tags=["Documentation"])
+def download_openapi_json():
+    return docs_service.build_openapi_json_response(app)
+
+
+@app.get("/openapi/download.yaml", tags=["Documentation"])
+def download_openapi_yaml():
+    return docs_service.build_openapi_yaml_response(app)

@@ -1,12 +1,9 @@
-import { useState } from "react";
+import { API } from "./api.js";
 import SystemDesign from "./SystemDesign.jsx";
 import logo from "../assets/logo.webp";
 
-export default function LandingPage({ onNavigate }) {
-  const [hoveredBtn, setHoveredBtn] = useState(null);
-
-  // Reusable SVG for Newspaper Document
-  const NewspaperSVG = ({ size, color, opacity }) => (
+function NewspaperSVG({ size, color, opacity }) {
+  return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke={color} opacity={opacity}>
       <path d="M4 22h14a2 2 0 0 0 2-2V7.5L14.5 2H6a2 2 0 0 0-2 2v4" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M14 2v6h6" strokeLinecap="round" strokeLinejoin="round" />
@@ -15,6 +12,32 @@ export default function LandingPage({ onNavigate }) {
       <path d="M2 12h10" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
+}
+
+export default function LandingPage({ onNavigate }) {
+  const apiDocsUrl = `${API}/docs`;
+
+  const contactLinks = {
+    email: "mailto:ujjaldeep.work@gmail.com",
+    github: "https://github.com/sleepyUjjal",
+    linkedin: "https://www.linkedin.com/in/ujjaldeep/",
+  };
+
+  function scrollToSection(sectionId) {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  function navLinkStyle(isPrimary = false) {
+    return {
+      color: isPrimary ? "var(--text)" : "var(--text-dim)",
+      cursor: "pointer",
+      textDecoration: "none",
+      transition: "color 0.2s",
+    };
+  }
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--bg)", fontFamily: "var(--body)", overflowX: "hidden", position: "relative" }}>
@@ -52,16 +75,52 @@ export default function LandingPage({ onNavigate }) {
 
       {/* Navbar Minimal */}
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "24px 48px", position: "relative", zIndex: 10 }}>
-        <div style={{ fontFamily: "var(--serif)", fontSize: 22, fontWeight: 900, color: "var(--text)", display: "flex", alignItems: "center", gap: 12 }}>
+        <button
+          type="button"
+          onClick={() => scrollToSection("hero")}
+          style={{ fontFamily: "var(--serif)", fontSize: 22, fontWeight: 900, color: "var(--text)", display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", cursor: "pointer" }}
+        >
           <img src={logo} alt="NuanceNode Logo" width="28" height="28" style={{ objectFit: "contain" }} />
           Nuance<span style={{ color: "var(--gold)" }}>Node</span>
-        </div>
+        </button>
         
         <nav style={{ display: "flex", gap: 36, fontFamily: "var(--mono)", fontSize: 13, color: "var(--text-dim)", fontWeight: 500 }}>
-          <span style={{ color: "var(--text)", cursor: "pointer" }}>Product</span>
-          <span style={{ cursor: "pointer", transition: "color 0.2s" }} onMouseEnter={e => e.target.style.color="var(--text)"} onMouseLeave={e => e.target.style.color="var(--text-dim)"}>Code</span>
-          <span style={{ cursor: "pointer", transition: "color 0.2s" }} onMouseEnter={e => e.target.style.color="var(--text)"} onMouseLeave={e => e.target.style.color="var(--text-dim)"}>Contact</span>
-          <span style={{ cursor: "pointer", transition: "color 0.2s" }} onMouseEnter={e => e.target.style.color="var(--text)"} onMouseLeave={e => e.target.style.color="var(--text-dim)"}>API Docs</span>
+          <button
+            type="button"
+            onClick={() => scrollToSection("hero")}
+            style={{ ...navLinkStyle(true), background: "none", border: "none", fontFamily: "inherit", fontSize: "inherit" }}
+          >
+            Product
+          </button>
+          <a
+            href={contactLinks.github}
+            target="_blank"
+            rel="noreferrer"
+            style={navLinkStyle()}
+            onMouseEnter={e => e.currentTarget.style.color = "var(--text)"}
+            onMouseLeave={e => e.currentTarget.style.color = "var(--text-dim)"}
+          >
+            Code
+          </a>
+          <button
+            type="button"
+            onClick={() => onNavigate("about")}
+            style={{ ...navLinkStyle(), background: "none", border: "none", fontFamily: "inherit", fontSize: "inherit" }}
+            onMouseEnter={e => e.currentTarget.style.color = "var(--text)"}
+            onMouseLeave={e => e.currentTarget.style.color = "var(--text-dim)"}
+          >
+            Contact
+          </button>
+          <a
+            href={apiDocsUrl}
+            target="_blank"
+            rel="noreferrer"
+            style={navLinkStyle()}
+            onMouseEnter={e => e.currentTarget.style.color = "var(--text)"}
+            onMouseLeave={e => e.currentTarget.style.color = "var(--text-dim)"}
+          >
+            API Docs
+          </a>
         </nav>
         
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -87,7 +146,7 @@ export default function LandingPage({ onNavigate }) {
       {/* Hero Content */}
       <main style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 100, position: "relative", zIndex: 10 }}>
         
-        <div className="fade-up" style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: 900, padding: "0 24px" }}>
+        <div id="hero" className="fade-up" style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", width: "100%", maxWidth: 900, padding: "0 24px" }}>
           
           {/* GitHub Style Massive Title */}
           <h1 style={{ fontFamily: "var(--serif)", fontSize: "5rem", lineHeight: 1.1, fontWeight: 800, marginBottom: 24, color: "var(--text)", textShadow: "0 4px 24px rgba(0,0,0,0.5)", letterSpacing: "-0.03em" }}>
@@ -121,10 +180,7 @@ export default function LandingPage({ onNavigate }) {
 
             {/* Outline Secondary Button */}
             <button
-              onClick={() => {
-                const el = document.getElementById("system-design");
-                if (el) el.scrollIntoView({ behavior: "smooth" });
-              }}
+              onClick={() => scrollToSection("system-design")}
               style={{ background: "transparent", color: "var(--text)", border: "1px solid var(--border)", padding: "0 24px", fontFamily: "var(--body)", fontSize: 15, fontWeight: 600, borderRadius: 8, cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 8 }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--text-dim)"; e.currentTarget.style.background = "#ffffff0a"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.background = "transparent"; }}
@@ -176,7 +232,7 @@ export default function LandingPage({ onNavigate }) {
         </div>
         
         {/* System Design Section component appended here */}
-        <SystemDesign />
+        <SystemDesign onNavigate={onNavigate} />
 
       </main>
     </div>

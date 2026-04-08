@@ -27,7 +27,7 @@ export default function Dashboard({ token, onLogout }) {
       const email = payload.sub || "User";
       const name = email.split('@')[0];
       return name.charAt(0).toUpperCase() + name.slice(1);
-    } catch(e) {
+    } catch {
       return "User";
     }
   }, [token]);

@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import AuthPage from "./modules/AuthPage.jsx";
+import AboutPage from "./modules/AboutPage.jsx";
 import Dashboard from "./modules/Dashboard.jsx";
 import LandingPage from "./modules/LandingPage.jsx";
 import FontLoader from "./modules/FontLoader.jsx";
@@ -23,6 +24,8 @@ export default function App() {
       <FontLoader />
       {token ? (
         <Dashboard token={token} onLogout={handleLogout} />
+      ) : authView === "about" ? (
+        <AboutPage onNavigate={setAuthView} />
       ) : authView === "landing" ? (
         <LandingPage onNavigate={setAuthView} />
       ) : (

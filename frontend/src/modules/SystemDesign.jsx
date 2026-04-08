@@ -1,6 +1,12 @@
 import logo from "../assets/logo.webp";
 
-export default function SystemDesign() {
+export default function SystemDesign({ onNavigate }) {
+  const contactLinks = {
+    email: "mailto:ujjaldeep.work@gmail.com",
+    github: "https://github.com/sleepyUjjal",
+    linkedin: "https://www.linkedin.com/in/ujjaldeep/",
+  };
+
   const modules = [
     {
       id: "01",
@@ -134,16 +140,22 @@ export default function SystemDesign() {
       <footer style={{ marginTop: 100, width: "100%", padding: "48px 0", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
         
         <div style={{ display: "flex", gap: 32, alignItems: "center", fontFamily: "var(--body)", fontSize: 15, fontWeight: 500 }}>
-          <a href="#" style={{ color: "var(--text)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.target.style.color = "var(--gold)"} onMouseLeave={e => e.target.style.color = "var(--text)"}>
+          <button
+            type="button"
+            onClick={() => onNavigate?.("about")}
+            style={{ background: "none", border: "none", color: "var(--text)", textDecoration: "none", transition: "color 0.2s", cursor: "pointer", fontFamily: "inherit", fontSize: "inherit", fontWeight: "inherit" }}
+            onMouseEnter={e => e.currentTarget.style.color = "var(--gold)"}
+            onMouseLeave={e => e.currentTarget.style.color = "var(--text)"}
+          >
             Contact
-          </a>
-          <a href="#" style={{ color: "var(--text)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.target.style.color = "var(--gold)"} onMouseLeave={e => e.target.style.color = "var(--text)"}>
+          </button>
+          <a href={contactLinks.linkedin} target="_blank" rel="noreferrer" style={{ color: "var(--text)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--gold)"} onMouseLeave={e => e.currentTarget.style.color = "var(--text)"}>
             LinkedIn
           </a>
-          <a href="#" style={{ color: "var(--text)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.target.style.color = "var(--gold)"} onMouseLeave={e => e.target.style.color = "var(--text)"}>
+          <a href={contactLinks.github} target="_blank" rel="noreferrer" style={{ color: "var(--text)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--gold)"} onMouseLeave={e => e.currentTarget.style.color = "var(--text)"}>
             GitHub
           </a>
-          <a href="#" style={{ color: "var(--text)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.target.style.color = "var(--gold)"} onMouseLeave={e => e.target.style.color = "var(--text)"}>
+          <a href={contactLinks.email} style={{ color: "var(--text)", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.currentTarget.style.color = "var(--gold)"} onMouseLeave={e => e.currentTarget.style.color = "var(--text)"}>
             Work Email
           </a>
         </div>

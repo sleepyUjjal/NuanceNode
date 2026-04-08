@@ -1,32 +1,32 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { apiFetch } from "./api.js";
 
-export default function HistoryPanel({ token, onSelectReport, onDeleteReport, activeId }) {
-  const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function HistoryPanel({ token, history, loading, onSelectReport, onDeleteReport, onReloadHistory, activeId }) {
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
+
+  const visibleHistory = useMemo(
+    () => history.filter((item) => item.id !== pendingDeleteId),
+    [history, pendingDeleteId],
+  );
 
   const confirmDelete = async () => {
     if (!itemToDelete) return;
+    const deletingId = itemToDelete.id;
+    setPendingDeleteId(deletingId);
+    onDeleteReport?.(deletingId);
+    setItemToDelete(null);
+
     try {
-      await apiFetch(`/history/${itemToDelete.id}`, { method: 'DELETE' }, token);
-      setHistory(h => h.filter(x => x.id !== itemToDelete.id));
-      if (onDeleteReport && activeId === itemToDelete.id) {
-        onDeleteReport(itemToDelete.id);
-      }
+      await apiFetch(`/history/${deletingId}`, { method: "DELETE" }, token);
     } catch (err) {
       console.error("Failed to delete", err);
+      onReloadHistory?.();
+    } finally {
+      setPendingDeleteId(null);
     }
-    setItemToDelete(null);
   };
-
-  useEffect(() => {
-    apiFetch("/history", {}, token)
-      .then(setHistory)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [token]);
 
   if (loading) {
     return (
@@ -48,7 +48,7 @@ export default function HistoryPanel({ token, onSelectReport, onDeleteReport, ac
     );
   }
 
-  if (!history.length) {
+  if (!visibleHistory.length) {
     return (
       <div style={{ padding: 24, fontFamily: "var(--mono)", fontSize: 12, color: "var(--text-faint)", textAlign: "center", lineHeight: 2 }}>
         No analyses yet.
@@ -61,7 +61,7 @@ export default function HistoryPanel({ token, onSelectReport, onDeleteReport, ac
   return (
     <>
     <div style={{ padding: "12px 0" }}>
-      {history.map((item, index) => (
+      {visibleHistory.map((item, index) => (
         <div key={item.id} className={`fade-up-${Math.min(index + 1, 5)}`} style={{ position: "relative" }}>
           <button
             onClick={() => onSelectReport(item.id)}

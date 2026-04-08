@@ -15,7 +15,8 @@ export default function Dashboard({ token, onLogout }) {
   const [loadingPhaseIndex, setLoadingPhaseIndex] = useState(0);
   const [error, setError] = useState("");
   const [currentReport, setCurrentReport] = useState(null);
-  const [historyKey, setHistoryKey] = useState(0);
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false); // Hidden by default for drawer
   const loadingStartedAt = useRef(0);
 
@@ -32,10 +33,26 @@ export default function Dashboard({ token, onLogout }) {
     }
   }, [token]);
 
+  const loadHistory = useCallback(async () => {
+    try {
+      setHistoryLoading(true);
+      const items = await apiFetch("/history", {}, token);
+      setHistory(items);
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
   const loadHistoryReport = useCallback(
     async (id) => {
       try {
-        const history = await apiFetch("/history", {}, token);
         const item = history.find((entry) => entry.id === id);
         if (!item) return;
 
@@ -60,10 +77,11 @@ export default function Dashboard({ token, onLogout }) {
         setError(err.message);
       }
     },
-    [token],
+    [history],
   );
 
   const handleDeleteReport = useCallback((id) => {
+    setHistory((current) => current.filter((item) => item.id !== id));
     if (currentReport?.id === id) {
       setCurrentReport(null);
       setClaim("");
@@ -100,7 +118,15 @@ export default function Dashboard({ token, onLogout }) {
       await new Promise((resolve) => window.setTimeout(resolve, 400));
 
       setCurrentReport(data);
-      setHistoryKey((value) => value + 1);
+      setHistory((current) => [
+        {
+          id: data.id,
+          claim: data.claim,
+          analysis_report: JSON.stringify(data.report),
+          created_at: new Date().toISOString(),
+        },
+        ...current.filter((item) => item.id !== data.id),
+      ]);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -195,10 +221,12 @@ export default function Dashboard({ token, onLogout }) {
             History
           </div>
           <HistoryPanel 
-            key={historyKey} 
             token={token} 
+            history={history}
+            loading={historyLoading}
             onSelectReport={loadHistoryReport} 
             onDeleteReport={handleDeleteReport}
+            onReloadHistory={loadHistory}
             activeId={currentReport?.id} 
           />
         </div>

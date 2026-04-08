@@ -34,7 +34,7 @@ export default function ConfidenceMeter({ score }) {
           height: 8,
           borderRadius: 999,
           overflow: "hidden",
-          background: "trackTint",
+          background: trackTint,
         }}
       >
         <div

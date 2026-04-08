@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 
 import AuthPage from "./modules/AuthPage.jsx";
 import AboutPage from "./modules/AboutPage.jsx";
 import Dashboard from "./modules/Dashboard.jsx";
 import LandingPage from "./modules/LandingPage.jsx";
 import FontLoader from "./modules/FontLoader.jsx";
+
+const ApiDocsPage = lazy(() => import("./modules/ApiDocsPage.jsx"));
 
 export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem("nn_token") || null);
@@ -24,6 +26,10 @@ export default function App() {
       <FontLoader />
       {token ? (
         <Dashboard token={token} onLogout={handleLogout} />
+      ) : authView === "docs" ? (
+        <Suspense fallback={null}>
+          <ApiDocsPage onNavigate={setAuthView} />
+        </Suspense>
       ) : authView === "about" ? (
         <AboutPage onNavigate={setAuthView} />
       ) : authView === "landing" ? (

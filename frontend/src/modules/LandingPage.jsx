@@ -1,4 +1,3 @@
-import { API } from "./api.js";
 import SystemDesign from "./SystemDesign.jsx";
 import logo from "../assets/logo.webp";
 
@@ -15,8 +14,6 @@ function NewspaperSVG({ size, color, opacity }) {
 }
 
 export default function LandingPage({ onNavigate }) {
-  const apiDocsUrl = `${API}/docs`;
-
   const contactLinks = {
     email: "mailto:ujjaldeep.work@gmail.com",
     github: "https://github.com/sleepyUjjal",
@@ -93,7 +90,7 @@ export default function LandingPage({ onNavigate }) {
             Product
           </button>
           <a
-            href={contactLinks.github}
+            href="https://github.com/sleepyUjjal/NuanceNode"
             target="_blank"
             rel="noreferrer"
             style={navLinkStyle()}
@@ -111,16 +108,15 @@ export default function LandingPage({ onNavigate }) {
           >
             Contact
           </button>
-          <a
-            href={apiDocsUrl}
-            target="_blank"
-            rel="noreferrer"
-            style={navLinkStyle()}
+          <button
+            type="button"
+            onClick={() => onNavigate("docs")}
+            style={{ ...navLinkStyle(), background: "none", border: "none", fontFamily: "inherit", fontSize: "inherit" }}
             onMouseEnter={e => e.currentTarget.style.color = "var(--text)"}
             onMouseLeave={e => e.currentTarget.style.color = "var(--text-dim)"}
           >
             API Docs
-          </a>
+          </button>
         </nav>
         
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>

@@ -1,8 +1,10 @@
 import json
 import logging
+import os
 import re
 from contextlib import asynccontextmanager
 from typing import List
+import dotenv
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,10 +44,13 @@ async def lifespan(_: FastAPI):
 app = FastAPI(lifespan=lifespan, **docs_service.get_app_docs_config())
 docs_service.attach_custom_openapi(app)
 
+dotenv.load_dotenv()  # Load environment variables from .env file
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS")
+
 # CORS setup for frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"], 
+    allow_origins=ALLOWED_ORIGINS.split(","), 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

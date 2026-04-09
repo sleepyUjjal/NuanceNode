@@ -139,12 +139,12 @@ The backend is built with FastAPI and acts as the orchestration layer for the en
 - It coordinates the multi-step analysis pipeline instead of letting the frontend talk directly to the model layer.
 - FastAPI is a good fit here because the project is API-first, typed, and structured around clear request-response flows.
 
-### Database Layer: SQLAlchemy + MySQL
+### Database Layer: SQLAlchemy + MySQL / Supabase Postgres
 
-NuanceNode uses SQLAlchemy as the ORM and MySQL as the persistent data store.
+NuanceNode uses SQLAlchemy as the ORM and can work with either MySQL or Supabase Postgres.
 
 - SQLAlchemy handles the application-side models, sessions, and database interaction.
-- MySQL stores users, analyzed claims, timestamps, and saved analysis reports.
+- MySQL or Supabase Postgres stores users, analyzed claims, timestamps, and saved analysis reports.
 - This matters because NuanceNode is not just a transient chatbot session. It keeps a user-linked history of investigations and supports revisiting previous reports.
 
 ### Local LLM Runtime: Ollama
@@ -176,7 +176,7 @@ This stack is well-suited to the product because each layer has a distinct respo
 
 - React handles the user experience and modular interface.
 - FastAPI handles orchestration and API boundaries.
-- SQLAlchemy and MySQL handle persistence and user-linked history.
+- SQLAlchemy and MySQL / Supabase Postgres handle persistence and user-linked history.
 - Ollama handles local reasoning and claim analysis.
 - The PDF layer turns the result into a usable report.
 
@@ -195,7 +195,9 @@ Before running the project, make sure you have:
 
 - Python 3.11 or 3.12 recommended
 - Node.js and npm
-- MySQL running locally
+- A database connection, either:
+  - MySQL running locally, or
+  - a Supabase Postgres connection string
 - Ollama installed and running locally
 
 ### 1. Clone The Project
@@ -217,6 +219,31 @@ pip install -r requirements.txt
 ```
 
 ### 3. Configure Backend Environment Variables
+
+For local MySQL, configure the MySQL variables.
+
+For Supabase, prefer a direct environment URL:
+
+```env
+DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT_REF.supabase.co:5432/postgres"
+```
+
+The backend will automatically use `DATABASE_URL` when it is present.
+
+### 4. Optional: Supabase RLS Hardening
+
+If you are using Supabase only as the database layer and all application access goes through FastAPI, you should harden the public tables so they are not exposed through the Data API.
+
+Run the SQL in:
+
+- [supabase_rls_hardening.sql](/Users/ujjal/Documents/Projects/NuanceNode/backend/sql/supabase_rls_hardening.sql)
+
+This:
+
+- enables RLS on `public.users`
+- enables RLS on `public.chats`
+- revokes `anon` and `authenticated` access from those tables
+- keeps server-side `service_role` access available
 
 Create a `backend/.env` file with values like these:
 

@@ -26,6 +26,7 @@ class Chat(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     claim = Column(Text, nullable=False)             # Fake news text by user
     analysis_report = Column(Text, nullable=True)    # GenAI JSON/Text report
+    pdf_storage_path = Column(Text, nullable=True)   # Supabase Storage object path
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Foreign Key: Connecting chat to its owner (User)

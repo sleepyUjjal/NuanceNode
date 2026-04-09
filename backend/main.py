@@ -8,7 +8,7 @@ import dotenv
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.exc import SQLAlchemyError
 from jose import jwt, JWTError
@@ -17,12 +17,12 @@ from sqlalchemy.orm import Session
 try:
     from . import models, schemas
     from .database import engine, get_db
-    from .services import docs_service, link_service, llm_service, pdf_service, user_service
+    from .services import docs_service, link_service, llm_service, pdf_service, storage_service, user_service
     from .services.user_service import ALGORITHM, SECRET_KEY
 except ImportError:
     import models, schemas
     from database import engine, get_db
-    from services import docs_service, link_service, llm_service, pdf_service, user_service
+    from services import docs_service, link_service, llm_service, pdf_service, storage_service, user_service
     from services.user_service import ALGORITHM, SECRET_KEY
 
 logger = logging.getLogger(__name__)
@@ -158,6 +158,13 @@ def delete_chat(chat_id: str, current_user: models.User = Depends(get_current_us
     chat = db.query(models.Chat).filter(models.Chat.id == chat_id, models.Chat.user_id == current_user.id).first()
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found or unauthorized")
+
+    if getattr(chat, "pdf_storage_path", None) and storage_service.is_storage_enabled():
+        try:
+            storage_service.remove_report_pdf(chat.pdf_storage_path)
+        except Exception:
+            logger.exception("Failed to remove PDF from Supabase Storage for chat_id=%s", chat_id)
+
     db.delete(chat)
     db.commit()
     return None
@@ -180,6 +187,20 @@ def download_pdf_report(
     chat = db.query(models.Chat).filter(models.Chat.id == chat_id, models.Chat.user_id == current_user.id).first()
     if not chat:
         raise HTTPException(status_code=404, detail="Report not found or unauthorized")
+
+    safe_claim = re.sub(r'[^a-zA-Z0-9]', '_', chat.claim)[:40].strip('_')
+    filename = f"NuanceNode_Report_{safe_claim}.pdf"
+
+    if getattr(chat, "pdf_storage_path", None) and storage_service.is_storage_enabled():
+        try:
+            pdf_bytes = storage_service.download_report_pdf(chat.pdf_storage_path)
+            return Response(
+                content=pdf_bytes,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            )
+        except Exception:
+            logger.exception("Failed to download PDF from Supabase Storage for chat_id=%s", chat_id)
     
     try:
         report_data = json.loads(chat.analysis_report)
@@ -187,21 +208,39 @@ def download_pdf_report(
         raise HTTPException(status_code=500, detail="Stored report data is corrupted.")
 
     try:
-        pdf_path = pdf_service.generate_pdf_report(chat.id, chat.claim, report_data)
+        pdf_bytes = pdf_service.generate_pdf_bytes(chat.id, chat.claim, report_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate PDF: {str(e)}")
 
-    if pdf_path.exists():
+    if storage_service.is_storage_enabled():
+        storage_path = getattr(chat, "pdf_storage_path", None) or storage_service.build_report_storage_path(current_user.id, chat.id)
+        try:
+            storage_service.upload_report_pdf(storage_path, pdf_bytes)
+            if getattr(chat, "pdf_storage_path", None) != storage_path:
+                chat.pdf_storage_path = storage_path
+                db.add(chat)
+                db.commit()
+            return Response(
+                content=pdf_bytes,
+                media_type="application/pdf",
+                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            )
+        except Exception:
+            logger.exception("Failed to upload PDF to Supabase Storage for chat_id=%s", chat_id)
 
-        safe_claim = re.sub(r'[^a-zA-Z0-9]', '_', chat.claim)[:40].strip('_')
+    try:
+        pdf_path = pdf_service.generate_pdf_report(chat.id, chat.claim, report_data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to persist local PDF: {str(e)}")
 
-        return FileResponse(
-            path=pdf_path,
-            filename=f"NuanceNode_Report_{safe_claim}.pdf", 
-            media_type="application/pdf"
-        )
-    else:
+    if not pdf_path.exists():
         raise HTTPException(status_code=500, detail="PDF generation failed")
+
+    return FileResponse(
+        path=pdf_path,
+        filename=filename,
+        media_type="application/pdf"
+    )
 
 
 @app.get("/openapi/download.json", tags=["Documentation"])

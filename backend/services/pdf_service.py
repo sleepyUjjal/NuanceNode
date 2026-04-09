@@ -151,7 +151,7 @@ def _add_context_tree_section(pdf: NuanceReport, title: str, items: list[Any], c
             _add_section(pdf, "- Argument", _safe_text(item))
 
 
-def generate_pdf_report(chat_id: str, claim: str, report_data: dict) -> Path:
+def _build_pdf(chat_id: str, claim: str, report_data: dict) -> NuanceReport:
     pdf = NuanceReport()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -221,6 +221,17 @@ def generate_pdf_report(chat_id: str, claim: str, report_data: dict) -> Path:
         if belief_drivers:
             _add_section(pdf, "Belief Drivers", belief_drivers)
 
+    return pdf
+
+
+def generate_pdf_bytes(chat_id: str, claim: str, report_data: dict) -> bytes:
+    pdf = _build_pdf(chat_id, claim, report_data)
+    return bytes(pdf.output())
+
+
+def generate_pdf_report(chat_id: str, claim: str, report_data: dict) -> Path:
+    pdf_bytes = generate_pdf_bytes(chat_id, claim, report_data)
+
     file_path = REPORTS_DIR / f"NuanceNode_Report_{chat_id}.pdf"
-    pdf.output(str(file_path))
+    file_path.write_bytes(pdf_bytes)
     return file_path

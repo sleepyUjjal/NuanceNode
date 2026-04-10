@@ -39,7 +39,7 @@ jsonpatch==1.33
 jsonpointer==3.1.0
 langchain-classic==1.0.3
 langchain-community==0.4.1
-langchain-core==1.2.20
+langchain-core==1.2.21
 langchain-google-genai==4.2.1
 langchain-ollama==1.1.0
 langchain-text-splitters==1.1.1
@@ -53,7 +53,7 @@ mysql-connector-python==9.6.0
 numpy==2.4.3
 ollama==0.6.1
 orjson==3.11.7
-packaging==26.0
+packaging==25.0
 passlib==1.7.4
 pillow==12.1.1
 postgrest==1.1.1
@@ -74,7 +74,7 @@ python-dotenv==1.2.2
 python-jose==3.5.0
 PyYAML==6.0.3
 realtime==2.7.0
-redis==5.3.0
+redis==5.2.1
 requests==2.32.5
 requests-toolbelt==1.0.0
 rsa==4.9.1

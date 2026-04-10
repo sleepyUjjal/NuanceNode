@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from typing import List
 import dotenv
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response
 from fastapi.security import OAuth2PasswordBearer
@@ -17,11 +17,15 @@ from sqlalchemy.orm import Session
 try:
     from . import models, schemas
     from .database import engine, get_db
+    from .middleware import register_all_middleware
+    from .middleware.rate_limiter import limiter
     from .services import docs_service, link_service, llm_service, pdf_service, storage_service, user_service
     from .services.user_service import ALGORITHM, SECRET_KEY
 except ImportError:
     import models, schemas
     from database import engine, get_db
+    from middleware import register_all_middleware
+    from middleware.rate_limiter import limiter
     from services import docs_service, link_service, llm_service, pdf_service, storage_service, user_service
     from services.user_service import ALGORITHM, SECRET_KEY
 
@@ -56,9 +60,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Register all middleware (rate limiter, security headers, logging, etc.)
+register_all_middleware(app)
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(request: Request, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     """Verify JWT and return current logged-in user."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -77,7 +84,20 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     user = db.query(models.User).filter(models.User.email == email).first()
     if user is None:
         raise credentials_exception
+
+    # Store user ID on request state for per-user rate limiting
+    request.state.current_user_id = user.id
     return user
+
+
+# ---------------------------------------------------------
+# HEALTH CHECK (ALB / uptime monitoring)
+# ---------------------------------------------------------
+
+@app.get("/health", tags=["Infrastructure"])
+def health_check():
+    """Lightweight health endpoint for ALB and uptime monitors."""
+    return {"status": "ok"}
 
 
 # ---------------------------------------------------------
@@ -85,7 +105,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 # ---------------------------------------------------------
 
 @app.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED, tags=["Authentication"])
-def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+def register_user(request: Request, user: schemas.UserCreate, db: Session = Depends(get_db)):
     """Register a new user."""
     if db.query(models.User).filter(models.User.email == user.email).first():
         raise HTTPException(status_code=400, detail="Email is already registered")
@@ -99,7 +120,8 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 @app.post("/login", response_model=schemas.Token, tags=["Authentication"])
-def login_user(user: schemas.UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login_user(request: Request, user: schemas.UserLogin, db: Session = Depends(get_db)):
     """Authenticate user and return JWT."""
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     
@@ -119,18 +141,19 @@ def login_user(user: schemas.UserLogin, db: Session = Depends(get_db)):
 # ---------------------------------------------------------
 
 @app.post("/analyze-claim", tags=["Analysis"])
-def analyze_claim(request: schemas.ClaimRequest, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def analyze_claim(request: Request, claim_request: schemas.ClaimRequest, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Analyze a claim using LLM, save to DB, and return data + download link."""
     
     analysis_result = llm_service.analyze_claim_with_context_tree(
-        request.claim,
+        claim_request.claim,
         db=db,
         user_id=current_user.id,
     )
     analysis_report_str = json.dumps(analysis_result)
 
     new_chat = models.Chat(
-        claim=request.claim,
+        claim=claim_request.claim,
         analysis_report=analysis_report_str,
         user_id=current_user.id
     )
@@ -148,12 +171,14 @@ def analyze_claim(request: schemas.ClaimRequest, current_user: models.User = Dep
     }
 
 @app.get("/history", response_model=List[schemas.ChatHistoryResponse], tags=["History"])
-def get_user_history(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+@limiter.limit("30/minute")
+def get_user_history(request: Request, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Fetch user's past analyzed claims."""
     return db.query(models.Chat).filter(models.Chat.user_id == current_user.id).order_by(models.Chat.created_at.desc()).all()
 
 @app.delete("/history/{chat_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["History"])
-def delete_chat(chat_id: str, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+@limiter.limit("20/minute")
+def delete_chat(request: Request, chat_id: str, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Delete a chat from user's history."""
     chat = db.query(models.Chat).filter(models.Chat.id == chat_id, models.Chat.user_id == current_user.id).first()
     if not chat:
@@ -177,7 +202,9 @@ def delete_chat(chat_id: str, current_user: models.User = Depends(get_current_us
 
 
 @app.get("/report/{chat_id}/download", tags=["Reports"])
+@limiter.limit("15/minute")
 def download_pdf_report(
+    request: Request,
     chat_id: str,
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),

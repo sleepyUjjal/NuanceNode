@@ -59,14 +59,26 @@ def build_public_report(chat) -> dict:
     }
 
 
+import os
+
+# Same env var used by link_service.py
+FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "").rstrip("/")
+
+
 def resolve_frontend_origin(allow_origins: list, request_base_url: str) -> str:
     """Determine the frontend origin for redirects.
     
-    In production ALLOWED_ORIGINS contains the real frontend domain.
-    In local dev (wildcard), swap backend port 8000 → Vite port 5173.
+    Priority:
+    1. FRONTEND_BASE_URL env var (most reliable — set explicitly)
+    2. First entry in ALLOWED_ORIGINS (if not wildcard)
+    3. Local dev fallback: swap port 8000 → 5173
     """
+    if FRONTEND_BASE_URL:
+        return FRONTEND_BASE_URL
+
     if allow_origins and allow_origins[0] != "*":
         return allow_origins[0].rstrip("/")
 
+    # Local dev fallback
     base = str(request_base_url).rstrip("/")
     return base.replace(":8000", ":5173")

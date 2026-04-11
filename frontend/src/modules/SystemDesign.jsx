@@ -79,7 +79,7 @@ export default function SystemDesign({ onNavigate }) {
 
   return (
     <section id="system-design" style={{ width: "100%", padding: "100px 48px 0px 48px", background: "transparent", position: "relative", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center" }}>
-      
+
       {/* Header */}
       <div className="fade-up" style={{ textAlign: "center", marginBottom: 60, maxWidth: 800 }}>
         <h2 style={{ fontFamily: "var(--serif)", fontSize: 32, fontWeight: 800, color: "var(--text)", marginBottom: 20, letterSpacing: "-0.02em" }}>
@@ -93,14 +93,14 @@ export default function SystemDesign({ onNavigate }) {
       {/* Modules Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 32, width: "100%", maxWidth: 1200 }}>
         {modules.map((mod, index) => (
-          <div 
-            key={mod.id} 
-            className="fade-up" 
-            style={{ 
+          <div
+            key={mod.id}
+            className="fade-up"
+            style={{
               animationDelay: (0.1 * index) + "s",
-              background: "rgba(255,255,255,0.02)", 
-              border: "1px solid rgba(255,255,255,0.06)", 
-              borderRadius: 16, 
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 16,
               padding: 40,
               position: "relative",
               overflow: "hidden",
@@ -137,7 +137,7 @@ export default function SystemDesign({ onNavigate }) {
       </div>
 
       <footer style={{ marginTop: 100, width: "100%", padding: "48px 0", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-        
+
         <div style={{ display: "flex", gap: 32, alignItems: "center", fontFamily: "var(--body)", fontSize: 14, fontWeight: 500 }}>
           <button
             type="button"
@@ -160,7 +160,7 @@ export default function SystemDesign({ onNavigate }) {
         </div>
 
         <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--text-dim)", letterSpacing: "0.05em", marginTop: 16 }}>
-          © {new Date().getFullYear()} NUANCENODE SYSTEM V2.0 • BUILT FOR VERIFICATION
+          © {new Date().getFullYear()} NUANCENODE SYSTEM V1.1 • BUILT FOR VERIFICATION
         </div>
       </footer>
 

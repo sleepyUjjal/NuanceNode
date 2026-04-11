@@ -26,6 +26,7 @@ fonttools==4.62.1
 fpdf2==2.8.7
 frozenlist==1.8.0
 google-auth==2.49.1
+gunicorn==21.2.0
 google-genai==1.68.0
 h11==0.16.0
 h2==4.3.0

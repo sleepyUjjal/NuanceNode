@@ -6,6 +6,7 @@ import HistoryPanel from "./HistoryPanel.jsx";
 import PhaseLoader from "./PhaseLoader.jsx";
 import ReportView from "./ReportView.jsx";
 import Spinner from "./Spinner.jsx";
+import StatsBar from "./StatsBar.jsx";
 import logo from "../assets/logo.webp";
 import { btnPrimaryStyle, inputStyle } from "./sharedStyles.js";
 
@@ -294,6 +295,7 @@ export default function Dashboard({ token, onLogout }) {
                   Hello, {userEmail}
                 </div>
               )}
+              {(!currentReport && !loading) && <StatsBar token={token} />}
               <div className="fade-up-1" style={{ 
                 fontFamily: "var(--serif)", fontSize: (!currentReport && !loading) ? 20 : 28, 
                 fontWeight: 700, marginBottom: 8, color: "var(--text)", lineHeight: 1.25,

@@ -25,14 +25,14 @@ try:
     from .database import engine, get_db
     from .middleware import register_all_middleware
     from .middleware.rate_limiter import limiter
-    from .services import docs_service, link_service, llm_service, pdf_service, share_service, storage_service, user_service, email_service
+    from .services import docs_service, link_service, llm_service, pdf_service, share_service, stats_service, storage_service, user_service, email_service
     from .services.user_service import ALGORITHM, SECRET_KEY
 except ImportError:
     import models, schemas
     from database import engine, get_db
     from middleware import register_all_middleware
     from middleware.rate_limiter import limiter
-    from services import docs_service, link_service, llm_service, pdf_service, share_service, storage_service, user_service, email_service
+    from services import docs_service, link_service, llm_service, pdf_service, share_service, stats_service, storage_service, user_service, email_service
     from services.user_service import ALGORITHM, SECRET_KEY
 
 logger = logging.getLogger(__name__)
@@ -320,6 +320,13 @@ def share_redirect(request: Request, chat_id: str, db: Session = Depends(get_db)
     frontend_origin = share_service.resolve_frontend_origin(allow_origins, request.base_url)
     html = share_service.build_og_html(chat, str(request.url), frontend_origin)
     return HTMLResponse(content=html)
+
+@app.get("/stats/me", tags=["Analytics"])
+@limiter.limit("30/minute")
+def get_user_stats(request: Request, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Return personal analytics for the logged-in user."""
+    chats = db.query(models.Chat).filter(models.Chat.user_id == current_user.id).all()
+    return stats_service.compute_user_stats(chats)
 
 @app.get("/history", response_model=List[schemas.ChatHistoryResponse], tags=["History"])
 @limiter.limit("30/minute")

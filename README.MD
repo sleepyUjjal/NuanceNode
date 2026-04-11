@@ -230,32 +230,38 @@ DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT_REF.supabase.c
 
 The backend will automatically use `DATABASE_URL` when it is present.
 
-### 4. Optional: Supabase RLS Hardening
+### 4. Supabase Setup & RLS Hardening (Crucial)
 
-If you are using Supabase only as the database layer and all application access goes through FastAPI, you should harden the public tables so they are not exposed through the Data API.
+If you are using Supabase, you must run the master setup script to ensure the security rules and table upgrades are applied. The backend creates tables on its own via SQLAlchemy, but it cannot apply security rules.
 
 Run the SQL in:
 
-- [supabase_rls_hardening.sql](/Users/ujjal/Documents/Projects/NuanceNode/backend/sql/supabase_rls_hardening.sql)
+- [01_master_setup.sql](NuanceNode/backend/sql/01_master_setup.sql)
 
-This:
-
-- enables RLS on `public.users`
-- enables RLS on `public.chats`
-- revokes `anon` and `authenticated` access from those tables
-- keeps server-side `service_role` access available
+This script is fully idempotent. It will:
+- Safely update the database for the 3-table robust Auth system.
+- Enable RLS on `public.users` and `public.chats`.
+- Revoke `anon` and `authenticated` access from those tables to prevent unauthorized public read/writes via the Supabase Javascript API.
+- Keep server-side `service_role` access available for FastAPI.
 
 Create a `backend/.env` file with values like these:
 
 ```env
+# Fast API & Security
 JWT_SECRET_KEY="your-secret-key"
 JWT_ALGORITHM="HS256"
 JWT_EXPIRATION_TIME_MINUTES=1440
 
+# Database
 DB_USER="your_mysql_user"
 DB_PASSWORD="your_mysql_password"
 DB_HOST="localhost"
 DB_NAME="nuancenode_db"
+
+# Authentication Features
+SMTP_EMAIL="your.email@gmail.com"
+SMTP_PASSWORD="your-16-digit-app-password"
+GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
 
 OLLAMA_MODEL="mistral:7b"
 OLLAMA_TEMPERATURE=0.1
@@ -325,6 +331,7 @@ If needed, create a frontend environment file such as `frontend/.env`:
 
 ```env
 VITE_API_URL="http://127.0.0.1:8000"
+VITE_GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
 ```
 
 ### 8. Run The Frontend

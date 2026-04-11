@@ -16,10 +16,19 @@ class UserLogin(BaseModel):
 class UserCreate(UserLogin):
     full_name: str = Field(min_length=1, max_length=100)
 
+class GoogleLogin(BaseModel):
+    token: str
+
+class VerifyOTP(BaseModel):
+    email: EmailStr
+    otp: str
+
 class UserResponse(BaseModel):
     id: str
     full_name: str
     email: str
+    is_verified: bool
+    auth_type: str
 
     class Config:
         from_attributes = True  #Convert SQLAlchemy model to Pydantic model

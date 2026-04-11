@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Text, ForeignKey, DateTime
+from sqlalchemy import Column, String, Text, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -14,10 +14,33 @@ class User(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     full_name = Column(String(255), nullable=True, default="")
     email = Column(String(255), unique=True, index=True, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
+    is_verified = Column(Boolean, default=False)
+    auth_type = Column(String(50), default="email")
 
-    # Relationship: 1 user : n chats. Delete chats on deleting user (cascade delete) 
+    # Relationships
     chats = relationship("Chat", back_populates="owner", cascade="all, delete-orphan")
+    email_auth = relationship("EmailAuthCredential", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    google_auth = relationship("GoogleAuthCredential", back_populates="user", uselist=False, cascade="all, delete-orphan")
+
+
+class EmailAuthCredential(Base):
+    __tablename__ = "email_auth_credentials"
+
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    hashed_password = Column(String(255), nullable=False)
+    otp_code = Column(String(10), nullable=True)
+    otp_expires_at = Column(DateTime, nullable=True)
+
+    user = relationship("User", back_populates="email_auth")
+
+
+class GoogleAuthCredential(Base):
+    __tablename__ = "google_auth_credentials"
+
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    google_id = Column(String(255), unique=True, nullable=False)
+
+    user = relationship("User", back_populates="google_auth")
 
 
 class Chat(Base):

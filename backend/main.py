@@ -14,7 +14,7 @@ from google.auth.transport import requests as google_requests
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, Response, HTMLResponse
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.exc import SQLAlchemyError
 from jose import jwt, JWTError
@@ -25,14 +25,14 @@ try:
     from .database import engine, get_db
     from .middleware import register_all_middleware
     from .middleware.rate_limiter import limiter
-    from .services import docs_service, link_service, llm_service, pdf_service, storage_service, user_service, email_service
+    from .services import docs_service, link_service, llm_service, pdf_service, share_service, storage_service, user_service, email_service
     from .services.user_service import ALGORITHM, SECRET_KEY
 except ImportError:
     import models, schemas
     from database import engine, get_db
     from middleware import register_all_middleware
     from middleware.rate_limiter import limiter
-    from services import docs_service, link_service, llm_service, pdf_service, storage_service, user_service, email_service
+    from services import docs_service, link_service, llm_service, pdf_service, share_service, storage_service, user_service, email_service
     from services.user_service import ALGORITHM, SECRET_KEY
 
 logger = logging.getLogger(__name__)
@@ -301,6 +301,25 @@ def analyze_claim(request: Request, claim_request: schemas.ClaimRequest, current
         "report": analysis_result, 
         "pdf_download_link": pdf_url  
     }
+
+@app.get("/report/{chat_id}/public", tags=["Reports"])
+@limiter.limit("30/minute")
+def get_public_report(request: Request, chat_id: str, db: Session = Depends(get_db)):
+    """Fetch an unauthenticated read-only view of a report using its secure UUID."""
+    chat = db.query(models.Chat).filter(models.Chat.id == chat_id).first()
+    if not chat:
+        raise HTTPException(status_code=404, detail="Shared report not found")
+    return share_service.build_public_report(chat)
+
+@app.get("/share/{chat_id}", response_class=HTMLResponse, tags=["Reports"])
+def share_redirect(request: Request, chat_id: str, db: Session = Depends(get_db)):
+    """Generate dynamic Open Graph tags for social crawlers and redirect users."""
+    chat = db.query(models.Chat).filter(models.Chat.id == chat_id).first()
+    if not chat:
+        raise HTTPException(status_code=404, detail="Shared report not found")
+    frontend_origin = share_service.resolve_frontend_origin(allow_origins, request.base_url)
+    html = share_service.build_og_html(chat, str(request.url), frontend_origin)
+    return HTMLResponse(content=html)
 
 @app.get("/history", response_model=List[schemas.ChatHistoryResponse], tags=["History"])
 @limiter.limit("30/minute")

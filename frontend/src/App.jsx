@@ -9,6 +9,7 @@ import FontLoader from "./modules/FontLoader.jsx";
 import NotFoundPage from "./modules/NotFoundPage.jsx";
 
 const ApiDocsPage = lazy(() => import("./modules/ApiDocsPage.jsx"));
+const PublicReportPage = lazy(() => import("./modules/PublicReportPage.jsx"));
 
 function AuthWrapper({ token, setToken, initialMode }) {
   const navigate = useNavigate();
@@ -47,6 +48,14 @@ export default function App() {
           element={
             <Suspense fallback={null}>
               <ApiDocsPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/public/:id"
+          element={
+            <Suspense fallback={<div style={{height: "100vh", background: "#0a0a0f"}} />}>
+              <PublicReportPage />
             </Suspense>
           }
         />

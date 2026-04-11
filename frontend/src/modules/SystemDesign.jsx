@@ -160,7 +160,7 @@ export default function SystemDesign({ onNavigate }) {
         </div>
 
         <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--text-dim)", letterSpacing: "0.05em", marginTop: 16 }}>
-          © {new Date().getFullYear()} NUANCENODE SYSTEM V1.1 • BUILT FOR VERIFICATION
+          © {new Date().getFullYear()} NUANCENODE SYSTEM V1.2 • BUILT FOR VERIFICATION
         </div>
       </footer>
 

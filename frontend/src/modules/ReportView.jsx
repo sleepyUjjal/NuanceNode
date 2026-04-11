@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 
-import { downloadAuthenticatedFile } from "./api.js";
+import { API, downloadAuthenticatedFile } from "./api.js";
 import ConfidenceMeter from "./ConfidenceMeter.jsx";
 import ContextTree from "./ContextTree.jsx";
 import { renderNodeValue, verdictColor } from "./uiUtils.jsx";
@@ -9,6 +9,7 @@ export default function ReportView({ report, token }) {
   const { id, claim, report: data, pdf_download_link } = report;
   const [downloadError, setDownloadError] = useState("");
   const [downloading, setDownloading] = useState(false);
+  const [shareState, setShareState] = useState("idle"); // idle | copied | error
   const vColor = verdictColor(data?.verdict);
   const diagnostics = Array.isArray(data?.meta?.diagnostics) ? data.meta.diagnostics.filter(Boolean) : [];
 
@@ -70,7 +71,7 @@ export default function ReportView({ report, token }) {
           "{claim}"
         </div>
         <ConfidenceMeter score={data?.confidence_score || 0} />
-        <div style={{ marginTop: 16 }}>
+        <div style={{ marginTop: 16, display: "flex", flexWrap: "wrap", gap: 10 }}>
           <button
             type="button"
             onClick={handleDownload}
@@ -98,6 +99,46 @@ export default function ReportView({ report, token }) {
             }}
           >
             {downloading ? "Preparing PDF…" : "↓ Download PDF Report"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              try {
+                const shareUrl = `${API}/share/${id}`;
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                  setShareState("copied");
+                  setTimeout(() => setShareState("idle"), 2500);
+                }).catch(() => {
+                  setShareState("error");
+                  setTimeout(() => setShareState("idle"), 2500);
+                });
+              } catch {
+                setShareState("error");
+                setTimeout(() => setShareState("idle"), 2500);
+              }
+            }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              fontFamily: "var(--mono)",
+              fontSize: 12,
+              color: shareState === "copied" ? "#2db36d" : "var(--text-dim)",
+              padding: "8px 16px",
+              border: `1px solid ${shareState === "copied" ? "rgba(45,179,109,0.4)" : "var(--border)"}`,
+              borderRadius: 6,
+              background: shareState === "copied" ? "rgba(45,179,109,0.1)" : "var(--surface)",
+              transition: "all 0.25s",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(event) => {
+              if (shareState === "idle") event.currentTarget.style.borderColor = "var(--text-faint)";
+            }}
+            onMouseLeave={(event) => {
+              if (shareState === "idle") event.currentTarget.style.borderColor = "var(--border)";
+            }}
+          >
+            {shareState === "copied" ? "✓ Link Copied!" : shareState === "error" ? "✕ Copy Failed" : "⎘ Share Link"}
           </button>
         </div>
         {downloadError && (

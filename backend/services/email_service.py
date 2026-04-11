@@ -57,3 +57,50 @@ def send_otp_email(to_email: str, otp_code: str):
         logger.error(f"Failed to send SMTP email to {to_email}: {str(e)}")
         print(f"\n[DEV FALLBACK] Your OTP code for {to_email} is: {otp_code}\n")
         return False
+
+def send_password_reset_email(to_email: str, otp_code: str):
+    """
+    Sends an OTP email for password reset purposes.
+    """
+    smtp_email = os.getenv("SMTP_EMAIL")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    smtp_server = "smtp.gmail.com"
+    smtp_port = 587
+
+    if not smtp_email or not smtp_password:
+        logger.warning(f"SMTP credentials not set! Reset OTP for {to_email} is {otp_code}")
+        print(f"\n[DEV FALLBACK] Your Password Reset OTP for {to_email} is: {otp_code}\n")
+        return True
+
+    msg = EmailMessage()
+    msg['Subject'] = "Reset Your NuanceNode Password"
+    msg['From'] = f"NuanceNode Security <{smtp_email}>"
+    msg['To'] = to_email
+
+    html_content = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+        <h2>Password Reset Request</h2>
+        <p>A password reset was requested for your NuanceNode account. Use the following code to securely set a new password:</p>
+        <div style="background-color: #f4f4f5; padding: 16px; border-radius: 8px; font-size: 24px; font-weight: bold; letter-spacing: 4px; text-align: center; width: max-content; margin: 24px 0;">
+          {otp_code}
+        </div>
+        <p style="color: #666; font-size: 14px;">This code will expire in 10 minutes. If you did not request this, you can safely ignore this email.</p>
+      </body>
+    </html>
+    """
+    msg.set_content("Your NuanceNode password reset OTP is: " + otp_code)
+    msg.add_alternative(html_content, subtype='html')
+
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_email, smtp_password)
+            server.send_message(msg)
+            
+        logger.info(f"Password reset OTP sent to {to_email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send reset email to {to_email}: {str(e)}")
+        print(f"\n[DEV FALLBACK] Your Password Reset OTP for {to_email} is: {otp_code}\n")
+        return False

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.webp";
 
 const contactLinks = {
@@ -83,7 +84,8 @@ function sectionLabel(text) {
   );
 }
 
-export default function AboutPage({ onNavigate }) {
+export default function AboutPage() {
+  const navigate = useNavigate();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   useEffect(() => {
@@ -138,7 +140,7 @@ export default function AboutPage({ onNavigate }) {
       >
         <button
           type="button"
-          onClick={() => onNavigate("landing")}
+          onClick={() => navigate("/")}
           style={{
             display: "flex",
             alignItems: "center",
@@ -153,13 +155,13 @@ export default function AboutPage({ onNavigate }) {
           }}
         >
           <img src={logo} alt="NuanceNode Logo" width={isMobile ? 20 : 28} height={isMobile ? 20 : 28} style={{ objectFit: "contain" }} />
-          Nuance<span style={{ color: "var(--gold)" }}>Node</span>
+          <span>Nuance<span style={{ color: "var(--gold)" }}>Node</span></span>
         </button>
 
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <button
             type="button"
-            onClick={() => onNavigate("landing")}
+            onClick={() => navigate("/")}
             style={{
               background: "rgba(255,255,255,0.03)",
               border: "1px solid rgba(255,255,255,0.08)",
@@ -189,7 +191,7 @@ export default function AboutPage({ onNavigate }) {
           </button>
           <button
             type="button"
-            onClick={() => onNavigate("login")}
+            onClick={() => navigate("/authen")}
             style={{
               background: "transparent",
               border: "none",
@@ -203,7 +205,7 @@ export default function AboutPage({ onNavigate }) {
           </button>
           <button
             type="button"
-            onClick={() => onNavigate("register")}
+            onClick={() => navigate("/authen", { state: { initialMode: "register" } })}
             style={{
               background: "transparent",
               border: "1px solid var(--border)",
@@ -613,7 +615,7 @@ export default function AboutPage({ onNavigate }) {
           </div>
           <button
             type="button"
-            onClick={() => onNavigate("landing")}
+            onClick={() => navigate("/")}
             style={{
               background: "transparent",
               border: "1px solid var(--border)",

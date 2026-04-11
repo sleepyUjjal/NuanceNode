@@ -201,8 +201,8 @@ export default function Dashboard({ token, onLogout }) {
         <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid var(--border)", flexShrink: 0, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontFamily: "var(--serif)", fontSize: 22, fontWeight: 900, color: "var(--text)", display: "flex", alignItems: "center", gap: 10 }}>
-              <img src={logo} alt="Logo" width="24" height="24" style={{ objectFit: "contain" }} />
-              Nuance<span style={{ color: "var(--gold)" }}>Node</span>
+              <img src={logo} alt="NuanceNode Logo" width="24" height="24" style={{ objectFit: "contain" }} />
+              <span>Nuance<span style={{ color: "var(--gold)" }}>Node</span></span>
             </div>
             <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--text-faint)", letterSpacing: "0.15em", textTransform: "uppercase", marginTop: 2 }}>
               AI Fact Intelligence

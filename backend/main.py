@@ -185,6 +185,49 @@ def login_user(request: Request, user: schemas.UserLogin, db: Session = Depends(
     access_token = user_service.create_access_token(data={"sub": db_user.email, "name": db_user.full_name})
     return {"access_token": access_token, "token_type": "bearer"}
 
+@app.post("/auth/send-reset-otp", tags=["Authentication"])
+@limiter.limit("5/minute")
+def request_password_reset(request: Request, data: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.email == data.email).first()
+    
+    # Do not leak whether the email exists or not to prevent user enumeration
+    if not db_user or db_user.auth_type != "email":
+        return {"message": "If that email is registered, a reset link will be sent."}
+    
+    # Generate OTP
+    otp_code = f"{random.randint(100000, 999999)}"
+    otp_expires = datetime.utcnow() + timedelta(minutes=10)
+    
+    cred = db.query(models.EmailAuthCredential).filter(models.EmailAuthCredential.user_id == db_user.id).first()
+    if cred:
+        cred.otp_code = otp_code
+        cred.otp_expires_at = otp_expires
+        db.commit()
+        email_service.send_password_reset_email(db_user.email, otp_code)
+        
+    return {"message": "If that email is registered, a reset link will be sent."}
+
+@app.post("/auth/reset-password", tags=["Authentication"])
+@limiter.limit("5/minute")
+def reset_password(request: Request, data: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.email == data.email).first()
+    if not db_user or db_user.auth_type != "email":
+        raise HTTPException(status_code=400, detail="Invalid request")
+        
+    cred = db.query(models.EmailAuthCredential).filter(models.EmailAuthCredential.user_id == db_user.id).first()
+    
+    # Check OTP validity
+    if not cred or cred.otp_code != data.otp or not cred.otp_expires_at or datetime.utcnow() > cred.otp_expires_at:
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+        
+    # Successfully verified OTP, update password
+    cred.hashed_password = user_service.get_password_hash(data.new_password)
+    cred.otp_code = None
+    cred.otp_expires_at = None
+    db.commit()
+    
+    return {"message": "Password successfully reset."}
+
 @app.post("/auth/google", response_model=schemas.Token, tags=["Authentication"])
 @limiter.limit("10/minute")
 def google_auth(request: Request, data: schemas.GoogleLogin, db: Session = Depends(get_db)):

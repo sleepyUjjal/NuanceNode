@@ -1,6 +1,7 @@
 import SwaggerUI from "swagger-ui-react";
 import "swagger-ui-react/swagger-ui.css";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 import logo from "../assets/logo.webp";
 import { resolveApiUrl } from "./api.js";
@@ -33,7 +34,8 @@ function navButtonStyle(outlined = false, isMobile = false) {
   };
 }
 
-export default function ApiDocsPage({ onNavigate }) {
+export default function ApiDocsPage() {
+  const navigate = useNavigate();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   useEffect(() => {
@@ -331,7 +333,7 @@ export default function ApiDocsPage({ onNavigate }) {
       >
         <button
           type="button"
-          onClick={() => onNavigate("landing")}
+          onClick={() => navigate("/")}
           style={{
             display: "flex",
             alignItems: "center",
@@ -346,13 +348,13 @@ export default function ApiDocsPage({ onNavigate }) {
           }}
         >
           <img src={logo} alt="NuanceNode Logo" width={isMobile ? 20 : 28} height={isMobile ? 20 : 28} style={{ objectFit: "contain" }} />
-          Nuance<span style={{ color: "var(--gold)" }}>Node</span>
+          <span>Nuance<span style={{ color: "var(--gold)" }}>Node</span></span>
         </button>
 
         <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 12 }}>
           <button
             type="button"
-            onClick={() => onNavigate("landing")}
+            onClick={() => navigate("/")}
             style={navButtonStyle(false, isMobile)}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)";
@@ -369,14 +371,14 @@ export default function ApiDocsPage({ onNavigate }) {
           </button>
           <button
             type="button"
-            onClick={() => onNavigate("login")}
+            onClick={() => navigate("/authen")}
             style={{ ...navButtonStyle(true, isMobile), border: "none" }}
           >
             Sign in
           </button>
           <button
             type="button"
-            onClick={() => onNavigate("register")}
+            onClick={() => navigate("/authen", { state: { initialMode: "register" } })}
             style={navButtonStyle(true, isMobile)}
           >
             Sign up

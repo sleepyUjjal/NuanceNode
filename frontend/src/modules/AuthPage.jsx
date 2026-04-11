@@ -6,10 +6,11 @@ import { btnPrimaryStyle, inputStyle } from "./sharedStyles.js";
 import logo from "../assets/logo.webp";
 
 export default function AuthPage({ initialMode = "login", onLogin, onBack }) {
-  const [mode, setMode] = useState(initialMode); // login | register | verify
+  const [mode, setMode] = useState(initialMode); // login | register | verify | forgot | reset
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -29,6 +30,19 @@ export default function AuthPage({ initialMode = "login", onLogin, onBack }) {
         const data = await apiFetch("/verify-email", { method: "POST", body: JSON.stringify({ email, otp }) });
         localStorage.setItem("nn_token", data.access_token);
         onLogin(data.access_token);
+      } else if (mode === "forgot") {
+        await apiFetch("/auth/send-reset-otp", { method: "POST", body: JSON.stringify({ email }) });
+        setMode("reset");
+        setError("Reset code sent! Please check your email.");
+      } else if (mode === "reset") {
+        if (password !== confirmPassword) {
+            setError("Passwords do not match.");
+            setLoading(false);
+            return;
+        }
+        await apiFetch("/auth/reset-password", { method: "POST", body: JSON.stringify({ email, otp, new_password: password }) });
+        setMode("login");
+        setError("Password has been successfully updated! You can now sign in.");
       } else {
         const data = await apiFetch("/login", { method: "POST", body: JSON.stringify({ email, password }) });
         localStorage.setItem("nn_token", data.access_token);
@@ -102,7 +116,7 @@ export default function AuthPage({ initialMode = "login", onLogin, onBack }) {
             }}
           >
             <img src={logo} alt="Logo" width="40" height="40" style={{ objectFit: "contain" }} />
-            Nuance<span style={{ color: "var(--gold)" }}>Node</span>
+            <span>Nuance<span style={{ color: "var(--gold)" }}>Node</span></span>
           </div>
           <div
             style={{
@@ -151,6 +165,11 @@ export default function AuthPage({ initialMode = "login", onLogin, onBack }) {
                 <h3 style={{ margin: 0, color: "var(--text)", fontSize: 16, fontFamily: "var(--mono)" }}>Verify Email</h3>
             </div>
           )}
+          {(mode === "forgot" || mode === "reset") && (
+            <div style={{ marginBottom: 28, borderBottom: "1px solid var(--border)", paddingBottom: 12 }}>
+                <h3 style={{ margin: 0, color: "var(--text)", fontSize: 16, fontFamily: "var(--mono)" }}>Reset Password</h3>
+            </div>
+          )}
 
           <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {mode === "register" && (
@@ -164,7 +183,7 @@ export default function AuthPage({ initialMode = "login", onLogin, onBack }) {
               />
             )}
             
-            {(mode === "login" || mode === "register") && (
+            {(mode === "login" || mode === "register" || mode === "forgot") && (
               <>
                 <input
                   type="email"
@@ -174,39 +193,41 @@ export default function AuthPage({ initialMode = "login", onLogin, onBack }) {
                   required
                   style={inputStyle}
                 />
-                <div style={{ position: "relative" }}>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    required
-                    minLength={8}
-                    style={{ ...inputStyle, width: "100%", paddingRight: 40 }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{
-                      position: "absolute",
-                      right: 12,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      padding: 0,
-                      color: "var(--text-faint)"
-                    }}
-                    title={showPassword ? "Hide password" : "Show password"}
-                  >
-                    {showPassword ? "Hide" : "Show"}
-                  </button>
-                </div>
+                {(mode === "login" || mode === "register") && (
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      required
+                      minLength={8}
+                      style={{ ...inputStyle, width: "100%", paddingRight: 40 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: "absolute",
+                        right: 12,
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: 0,
+                        color: "var(--text-faint)"
+                      }}
+                      title={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                )}
               </>
             )}
 
-            {mode === "verify" && (
+            {(mode === "verify" || mode === "reset") && (
                 <>
                   <input
                     type="email"
@@ -226,6 +247,28 @@ export default function AuthPage({ initialMode = "login", onLogin, onBack }) {
                     maxLength={10}
                     style={{ ...inputStyle, textAlign: "center", letterSpacing: "4px" }}
                   />
+                  {mode === "reset" && (
+                    <>
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="New Password"
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        required
+                        minLength={8}
+                        style={inputStyle}
+                      />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Confirm New Password"
+                        value={confirmPassword}
+                        onChange={(event) => setConfirmPassword(event.target.value)}
+                        required
+                        minLength={8}
+                        style={inputStyle}
+                      />
+                    </>
+                  )}
                 </>
             )}
 
@@ -234,11 +277,11 @@ export default function AuthPage({ initialMode = "login", onLogin, onBack }) {
                 style={{
                   fontFamily: "var(--mono)",
                   fontSize: 12,
-                  color: error.includes("created!") ? "var(--green)" : "var(--red)",
+                  color: error.includes("created!") || error.includes("sent!") || error.includes("successfully") ? "var(--green)" : "var(--red)",
                   padding: "8px 12px",
-                  background: error.includes("created!") ? "var(--green-dim)" : "var(--red-dim)",
+                  background: error.includes("created!") || error.includes("sent!") || error.includes("successfully") ? "var(--green-dim)" : "var(--red-dim)",
                   borderRadius: 6,
-                  borderLeft: `3px solid ${error.includes("created!") ? "var(--green)" : "var(--red)"}`,
+                  borderLeft: `3px solid ${error.includes("created!") || error.includes("sent!") || error.includes("successfully") ? "var(--green)" : "var(--red)"}`,
                 }}
               >
                 {error}
@@ -250,7 +293,10 @@ export default function AuthPage({ initialMode = "login", onLogin, onBack }) {
                 ? "Please wait…" 
                 : mode === "login" 
                   ? "Sign In →" 
-                  : (mode === "register" ? "Create Account →" : "Verify OTP →")}
+                  : mode === "register" ? "Create Account →" 
+                  : mode === "forgot" ? "Send Reset Code →"
+                  : mode === "reset" ? "Reset Password →"
+                  : "Verify OTP →"}
             </button>
           </form>
 
@@ -306,7 +352,19 @@ export default function AuthPage({ initialMode = "login", onLogin, onBack }) {
             </>
           )}
 
-          {mode === "verify" && (
+          {mode === "login" && (
+            <div style={{ textAlign: "center", marginTop: 24 }}>
+                <button 
+                type="button" 
+                onClick={() => setMode("forgot")}
+                style={{ background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", fontFamily: "var(--mono)", fontSize: 11, textDecoration: "underline" }}
+                >
+                    Forgot Password?
+                </button>
+            </div>
+          )}
+
+          {(mode === "verify" || mode === "forgot" || mode === "reset") && (
               <div style={{ textAlign: "center", marginTop: 24 }}>
                   <button 
                   type="button" 

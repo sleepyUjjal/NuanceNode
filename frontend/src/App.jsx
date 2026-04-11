@@ -1,20 +1,31 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 
 import AuthPage from "./modules/AuthPage.jsx";
 import AboutPage from "./modules/AboutPage.jsx";
 import Dashboard from "./modules/Dashboard.jsx";
 import LandingPage from "./modules/LandingPage.jsx";
 import FontLoader from "./modules/FontLoader.jsx";
+import NotFoundPage from "./modules/NotFoundPage.jsx";
 
 const ApiDocsPage = lazy(() => import("./modules/ApiDocsPage.jsx"));
 
-export default function App() {
-  const [token, setToken] = useState(() => localStorage.getItem("nn_token") || null);
-  const [authView, setAuthView] = useState("landing");
+function AuthWrapper({ token, setToken, initialMode }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const mode = location.state?.initialMode || initialMode;
 
   function handleLogin(nextToken) {
     setToken(nextToken);
+    navigate("/"); // Redirect to dashboard after login
   }
+
+  if (token) return <Navigate to="/" replace />;
+  return <AuthPage initialMode={mode} onLogin={handleLogin} onBack={() => navigate("/")} />;
+}
+
+export default function App() {
+  const [token, setToken] = useState(() => localStorage.getItem("nn_token") || null);
 
   function handleLogout() {
     localStorage.removeItem("nn_token");
@@ -22,21 +33,25 @@ export default function App() {
   }
 
   return (
-    <>
+    <Router>
       <FontLoader />
-      {token ? (
-        <Dashboard token={token} onLogout={handleLogout} />
-      ) : authView === "docs" ? (
-        <Suspense fallback={null}>
-          <ApiDocsPage onNavigate={setAuthView} />
-        </Suspense>
-      ) : authView === "about" ? (
-        <AboutPage onNavigate={setAuthView} />
-      ) : authView === "landing" ? (
-        <LandingPage onNavigate={setAuthView} />
-      ) : (
-        <AuthPage initialMode={authView} onLogin={handleLogin} onBack={() => setAuthView("landing")} />
-      )}
-    </>
+      <Routes>
+        <Route 
+          path="/" 
+          element={token ? <Dashboard token={token} onLogout={handleLogout} /> : <LandingPage />} 
+        />
+        <Route path="/contact" element={<AboutPage />} />
+        <Route path="/authen" element={<AuthWrapper token={token} setToken={setToken} initialMode="login" />} />
+        <Route
+          path="/docs"
+          element={
+            <Suspense fallback={null}>
+              <ApiDocsPage />
+            </Suspense>
+          }
+        />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </Router>
   );
 }

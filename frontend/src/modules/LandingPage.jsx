@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import SystemDesign from "./SystemDesign.jsx";
 import logo from "../assets/logo.webp";
 
@@ -33,7 +34,8 @@ function CloseIcon({ size = 24 }) {
   );
 }
 
-export default function LandingPage({ onNavigate }) {
+export default function LandingPage() {
+  const navigate = useNavigate();
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -104,7 +106,7 @@ export default function LandingPage({ onNavigate }) {
           style={{ fontFamily: "var(--serif)", fontSize: isMobile ? 20 : 22, fontWeight: 900, color: "var(--text)", display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", cursor: "pointer", zIndex: 20 }}
         >
           <img src={logo} alt="NuanceNode Logo" width={isMobile ? 20 : 28} height={isMobile ? 20 : 28} style={{ objectFit: "contain" }} />
-          Nuance<span style={{ color: "var(--gold)" }}>Node</span>
+          <span>Nuance<span style={{ color: "var(--gold)" }}>Node</span></span>
         </button>
         
         {/* Desktop Navbar */}
@@ -130,7 +132,7 @@ export default function LandingPage({ onNavigate }) {
               </a>
               <button
                 type="button"
-                onClick={() => onNavigate("about")}
+                onClick={() => navigate("/contact")}
                 style={{ ...navLinkStyle(), background: "none", border: "none", fontFamily: "inherit", fontSize: "inherit" }}
                 onMouseEnter={e => e.currentTarget.style.color = "var(--text)"}
                 onMouseLeave={e => e.currentTarget.style.color = "var(--text-dim)"}
@@ -139,7 +141,7 @@ export default function LandingPage({ onNavigate }) {
               </button>
               <button
                 type="button"
-                onClick={() => onNavigate("docs")}
+                onClick={() => navigate("/docs")}
                 style={{ ...navLinkStyle(), background: "none", border: "none", fontFamily: "inherit", fontSize: "inherit" }}
                 onMouseEnter={e => e.currentTarget.style.color = "var(--text)"}
                 onMouseLeave={e => e.currentTarget.style.color = "var(--text-dim)"}
@@ -150,7 +152,7 @@ export default function LandingPage({ onNavigate }) {
             
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <button
-                onClick={() => onNavigate("login")}
+                onClick={() => navigate("/authen")}
                 style={{ background: "transparent", border: "none", color: "var(--text)", padding: "10px 16px", fontFamily: "var(--body)", fontSize: 14, fontWeight: 500, cursor: "pointer", transition: "opacity 0.2s" }}
                 onMouseEnter={e => e.currentTarget.style.opacity = "0.7"}
                 onMouseLeave={e => e.currentTarget.style.opacity = "1"}
@@ -158,7 +160,7 @@ export default function LandingPage({ onNavigate }) {
                 Sign in
               </button>
               <button
-                onClick={() => onNavigate("register")}
+                onClick={() => navigate("/authen", { state: { initialMode: "register" } })}
                 style={{ background: "transparent", border: "1px solid var(--border)", color: "var(--text)", padding: "8px 16px", fontFamily: "var(--body)", borderRadius: 6, fontSize: 14, cursor: "pointer", transition: "all 0.2s" }}
                 onMouseEnter={e => e.currentTarget.style.borderColor = "var(--text)"}
                 onMouseLeave={e => e.currentTarget.style.borderColor = "var(--border)"}
@@ -207,19 +209,19 @@ export default function LandingPage({ onNavigate }) {
               <a href="https://github.com/sleepyUjjal/NuanceNode" target="_blank" rel="noreferrer" style={navLinkStyle()}>
                 Code
               </a>
-              <button type="button" onClick={() => onNavigate("about")} style={{ ...navLinkStyle(), background: "none", border: "none", fontFamily: "inherit", fontSize: "inherit", textAlign: "left" }}>
+              <button type="button" onClick={() => navigate("/contact")} style={{ ...navLinkStyle(), background: "none", border: "none", fontFamily: "inherit", fontSize: "inherit", textAlign: "left" }}>
                 Contact
               </button>
-              <button type="button" onClick={() => onNavigate("docs")} style={{ ...navLinkStyle(), background: "none", border: "none", fontFamily: "inherit", fontSize: "inherit", textAlign: "left" }}>
+              <button type="button" onClick={() => navigate("/docs")} style={{ ...navLinkStyle(), background: "none", border: "none", fontFamily: "inherit", fontSize: "inherit", textAlign: "left" }}>
                 API Docs
               </button>
               
               <div style={{ width: "100%", height: 1, background: "var(--border)", margin: "8px 0" }}></div>
 
-              <button onClick={() => onNavigate("login")} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid var(--border)", color: "var(--text)", padding: "12px 24px", fontFamily: "var(--body)", borderRadius: 6, fontSize: 15, fontWeight: 600, cursor: "pointer", textAlign: "center" }}>
+              <button onClick={() => navigate("/authen")} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid var(--border)", color: "var(--text)", padding: "12px 24px", fontFamily: "var(--body)", borderRadius: 6, fontSize: 15, fontWeight: 600, cursor: "pointer", textAlign: "center" }}>
                 Sign in
               </button>
-              <button onClick={() => onNavigate("register")} style={{ background: "var(--gold)", color: "#000", border: "none", padding: "12px 24px", fontFamily: "var(--body)", borderRadius: 6, fontSize: 15, fontWeight: 700, cursor: "pointer", textAlign: "center", marginTop: 8 }}>
+              <button onClick={() => navigate("/authen", { state: { initialMode: "register" } })} style={{ background: "var(--gold)", color: "#000", border: "none", padding: "12px 24px", fontFamily: "var(--body)", borderRadius: 6, fontSize: 15, fontWeight: 700, cursor: "pointer", textAlign: "center", marginTop: 8 }}>
                 Sign up
               </button>
             </nav>
@@ -252,7 +254,7 @@ export default function LandingPage({ onNavigate }) {
                 style={{ flex: 1, background: "transparent", border: "none", color: "var(--text)", padding: "0 16px", fontFamily: "var(--body)", fontSize: 14, outline: "none", minWidth: 0 }}
               />
               <button
-                onClick={() => onNavigate("register")}
+                onClick={() => navigate("/authen", { state: { initialMode: "register" } })}
                 style={{ background: "var(--gold)", color: "#000", border: "none", padding: isMobile ? "0 16px" : "0 20px", fontFamily: "var(--body)", fontSize: isMobile ? 13 : 14, fontWeight: 700, cursor: "pointer", transition: "filter 0.2s", whiteSpace: "nowrap" }}
                 onMouseEnter={e => e.currentTarget.style.filter = "brightness(1.1)"}
                 onMouseLeave={e => e.currentTarget.style.filter = "brightness(1)"}
@@ -314,7 +316,7 @@ export default function LandingPage({ onNavigate }) {
         </div>
         
         {/* System Design Section component appended here */}
-        <SystemDesign onNavigate={onNavigate} />
+        <SystemDesign />
 
       </main>
     </div>

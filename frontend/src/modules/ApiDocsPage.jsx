@@ -1,5 +1,6 @@
 import SwaggerUI from "swagger-ui-react";
 import "swagger-ui-react/swagger-ui.css";
+import { useState, useEffect } from "react";
 
 import logo from "../assets/logo.webp";
 import { resolveApiUrl } from "./api.js";
@@ -11,27 +12,38 @@ const schemaLinks = {
 
 const swaggerSpecUrl = resolveApiUrl("/openapi.json");
 
-function navButtonStyle(outlined = false) {
+function navButtonStyle(outlined = false, isMobile = false) {
   return {
     background: outlined ? "transparent" : "rgba(255,255,255,0.03)",
     border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: 10,
+    borderRadius: 8,
     color: "var(--text)",
     cursor: "pointer",
     fontFamily: outlined ? "var(--body)" : "var(--mono)",
-    fontSize: outlined ? 14 : 12,
+    fontSize: isMobile ? (outlined ? 13 : 11) : (outlined ? 14 : 12),
     letterSpacing: outlined ? "0" : "0.06em",
     textTransform: outlined ? "none" : "uppercase",
-    padding: outlined ? "9px 16px" : "10px 14px",
+    padding: isMobile ? (outlined ? "7px 10px" : "8px 10px") : (outlined ? "9px 16px" : "10px 14px"),
     transition: "all 0.2s ease",
     textDecoration: "none",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
+    whiteSpace: "nowrap"
   };
 }
 
 export default function ApiDocsPage({ onNavigate }) {
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const isMobile = windowWidth < 650;
+
   return (
     <div
       style={{
@@ -205,12 +217,15 @@ export default function ApiDocsPage({ onNavigate }) {
             border-color: rgba(255, 255, 255, 0.08);
           }
 
-          .nuancenode-swagger-shell .swagger-ui .opblock .opblock-summary {
-            align-items: center;
-          }
-
           .nuancenode-swagger-shell .swagger-ui .opblock-tag {
             background: rgba(255, 255, 255, 0.02);
+            display: flex;
+            flex-wrap: wrap !important;
+            row-gap: 8px;
+          }
+
+          .nuancenode-swagger-shell .swagger-ui .opblock-tag small {
+             flex: 1 1 100%;
           }
 
           .nuancenode-swagger-shell .swagger-ui .opblock {
@@ -223,6 +238,10 @@ export default function ApiDocsPage({ onNavigate }) {
           .nuancenode-swagger-shell .swagger-ui .opblock .opblock-section-header,
           .nuancenode-swagger-shell .swagger-ui .responses-inner {
             background: rgba(0, 0, 0, 0.12);
+          }
+
+          .nuancenode-swagger-shell .swagger-ui .opblock-summary-method {
+            min-width: 80px;
           }
 
           .nuancenode-swagger-shell .swagger-ui .parameters-col_description input,
@@ -304,8 +323,10 @@ export default function ApiDocsPage({ onNavigate }) {
           zIndex: 1,
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          padding: "24px 48px",
+          flexWrap: "wrap",
+          gap: 16,
+          justifyContent: isMobile ? "center" : "space-between",
+          padding: isMobile ? "16px 20px" : "24px 48px",
         }}
       >
         <button
@@ -320,19 +341,19 @@ export default function ApiDocsPage({ onNavigate }) {
             color: "var(--text)",
             cursor: "pointer",
             fontFamily: "var(--serif)",
-            fontSize: 22,
+            fontSize: isMobile ? 20 : 22,
             fontWeight: 900,
           }}
         >
-          <img src={logo} alt="NuanceNode Logo" width="28" height="28" style={{ objectFit: "contain" }} />
+          <img src={logo} alt="NuanceNode Logo" width={isMobile ? 20 : 28} height={isMobile ? 20 : 28} style={{ objectFit: "contain" }} />
           Nuance<span style={{ color: "var(--gold)" }}>Node</span>
         </button>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 12 }}>
           <button
             type="button"
             onClick={() => onNavigate("landing")}
-            style={navButtonStyle()}
+            style={navButtonStyle(false, isMobile)}
             onMouseEnter={(e) => {
               e.currentTarget.style.borderColor = "rgba(201,168,76,0.3)";
               e.currentTarget.style.background = "rgba(201,168,76,0.08)";
@@ -349,14 +370,14 @@ export default function ApiDocsPage({ onNavigate }) {
           <button
             type="button"
             onClick={() => onNavigate("login")}
-            style={{ ...navButtonStyle(true), border: "none" }}
+            style={{ ...navButtonStyle(true, isMobile), border: "none" }}
           >
             Sign in
           </button>
           <button
             type="button"
             onClick={() => onNavigate("register")}
-            style={navButtonStyle(true)}
+            style={navButtonStyle(true, isMobile)}
           >
             Sign up
           </button>
@@ -369,7 +390,7 @@ export default function ApiDocsPage({ onNavigate }) {
           zIndex: 1,
           maxWidth: 1240,
           margin: "0 auto",
-          padding: "20px 48px 72px",
+          padding: isMobile ? "12px 20px 60px" : "20px 48px 72px",
         }}
       >
         <section
@@ -405,33 +426,33 @@ export default function ApiDocsPage({ onNavigate }) {
               style={{
                 display: "grid",
                 gap: 16,
-                gridTemplateColumns: "minmax(0, 1fr) auto",
-                alignItems: "end",
+                gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1fr) auto",
+                alignItems: isMobile ? "start" : "end",
               }}
             >
               <div>
                 <h1
                   style={{
                     fontFamily: "var(--serif)",
-                    fontSize: "clamp(2.4rem, 4.5vw, 4rem)",
+                    fontSize: "clamp(2rem, 3.8vw, 3.2rem)",
                     lineHeight: 1.05,
                     marginBottom: 12,
                   }}
                 >
                   Explore NuanceNode&apos;s API
                 </h1>
-                <p style={{ fontSize: 17, color: "var(--text-dim)", lineHeight: 1.8, maxWidth: 760 }}>
+                <p style={{ fontSize: isMobile ? 14 : 15, color: "var(--text-dim)", lineHeight: 1.6, maxWidth: 760 }}>
                   This page renders the live OpenAPI schema exposed by the backend, so the docs stay synced with the
                   running FastAPI service. You can inspect endpoints here or download the schema directly as JSON or
                   YAML.
                 </p>
               </div>
 
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                <a href={schemaLinks.json} style={navButtonStyle(true)}>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: isMobile ? "flex-start" : "flex-end" }}>
+                <a href={schemaLinks.json} style={navButtonStyle(true, isMobile)}>
                   Download JSON
                 </a>
-                <a href={schemaLinks.yaml} style={navButtonStyle(true)}>
+                <a href={schemaLinks.yaml} style={navButtonStyle(true, isMobile)}>
                   Download YAML
                 </a>
               </div>
@@ -470,7 +491,7 @@ export default function ApiDocsPage({ onNavigate }) {
             </div>
           </div>
 
-          <div className="nuancenode-swagger-shell" style={{ padding: "8px 24px 28px" }}>
+          <div className="nuancenode-swagger-shell" style={{ padding: isMobile ? "8px 12px 28px" : "8px 24px 28px" }}>
             <SwaggerUI url={swaggerSpecUrl} docExpansion="list" defaultModelsExpandDepth={-1} displayRequestDuration />
           </div>
         </section>

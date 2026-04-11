@@ -1,4 +1,13 @@
-export const API = (import.meta.env.VITE_API_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
+const isLocalhost = Boolean(
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "[::1]" ||
+  window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/)
+);
+
+export const API = (
+  import.meta.env.VITE_API_URL || 
+  (isLocalhost ? "http://127.0.0.1:8000" : window.location.origin)
+).replace(/\/$/, "");
 
 export async function apiFetch(path, opts = {}, token = null) {
   const headers = { ...(token ? { Authorization: `Bearer ${token}` } : {}) };

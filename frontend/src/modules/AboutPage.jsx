@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import logo from "../assets/logo.webp";
 
 const contactLinks = {
@@ -83,6 +84,16 @@ function sectionLabel(text) {
 }
 
 export default function AboutPage({ onNavigate }) {
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const isMobile = windowWidth < 650;
+
   return (
     <div
       style={{
@@ -119,8 +130,10 @@ export default function AboutPage({ onNavigate }) {
           zIndex: 1,
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          padding: "24px 48px",
+          flexWrap: "wrap",
+          gap: 16,
+          justifyContent: isMobile ? "center" : "space-between",
+          padding: isMobile ? "16px 20px" : "24px 48px",
         }}
       >
         <button
@@ -135,11 +148,11 @@ export default function AboutPage({ onNavigate }) {
             color: "var(--text)",
             cursor: "pointer",
             fontFamily: "var(--serif)",
-            fontSize: 22,
+            fontSize: isMobile ? 20 : 22,
             fontWeight: 900,
           }}
         >
-          <img src={logo} alt="NuanceNode Logo" width="28" height="28" style={{ objectFit: "contain" }} />
+          <img src={logo} alt="NuanceNode Logo" width={isMobile ? 20 : 28} height={isMobile ? 20 : 28} style={{ objectFit: "contain" }} />
           Nuance<span style={{ color: "var(--gold)" }}>Node</span>
         </button>
 
@@ -183,7 +196,7 @@ export default function AboutPage({ onNavigate }) {
               color: "var(--text)",
               cursor: "pointer",
               fontFamily: "var(--body)",
-              fontSize: 14,
+              fontSize: isMobile ? 12 : 14,
             }}
           >
             Sign in
@@ -196,10 +209,10 @@ export default function AboutPage({ onNavigate }) {
               border: "1px solid var(--border)",
               borderRadius: 10,
               color: "var(--text)",
-              padding: "9px 16px",
+              padding: isMobile ? "7px 12px" : "9px 16px",
               cursor: "pointer",
               fontFamily: "var(--body)",
-              fontSize: 14,
+              fontSize: isMobile ? 12 : 14,
             }}
           >
             Sign up
@@ -222,7 +235,7 @@ export default function AboutPage({ onNavigate }) {
           className="fade-up"
           style={{
             display: "grid",
-            gridTemplateColumns: "minmax(0, 1.15fr) minmax(320px, 0.85fr)",
+            gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1.15fr) minmax(320px, 0.85fr)",
             gap: 28,
             alignItems: "stretch",
           }}
@@ -232,7 +245,7 @@ export default function AboutPage({ onNavigate }) {
               background: "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))",
               border: "1px solid rgba(255,255,255,0.08)",
               borderRadius: 24,
-              padding: 34,
+              padding: isMobile ? 24 : 34,
               boxShadow: "0 24px 64px rgba(0,0,0,0.34)",
             }}
           >
@@ -240,7 +253,7 @@ export default function AboutPage({ onNavigate }) {
             <h1
               style={{
                 fontFamily: "var(--serif)",
-                fontSize: 56,
+                fontSize: isMobile ? 40 : 56,
                 lineHeight: 1.03,
                 marginBottom: 20,
                 maxWidth: 560,
@@ -248,19 +261,19 @@ export default function AboutPage({ onNavigate }) {
             >
               Ujjaldeep Singh
             </h1>
-            <p style={{ fontSize: 18, color: "var(--text-dim)", lineHeight: 1.85, marginBottom: 18, maxWidth: 680 }}>
+            <p style={{ fontSize: isMobile ? 14 : 16, color: "var(--text-dim)", lineHeight: 1.85, marginBottom: 18, maxWidth: 680 }}>
               Hi everyone! I’m Ujjaldeep, an aspiring backend developer who’s curious about how things actually work
               behind what we see on the internet.
             </p>
-            <p style={{ fontSize: 16, color: "#a9a9bc", lineHeight: 1.9, marginBottom: 18, maxWidth: 700 }}>
+            <p style={{ fontSize: isMobile ? 12 : 14, color: "#a9a9bc", lineHeight: 1.9, marginBottom: 18, maxWidth: 700 }}>
               I enjoy solving real-world problems using logic and programming, and I’m always trying to build things
               that are not only functional but also meaningful.
             </p>
-            <p style={{ fontSize: 16, color: "#a9a9bc", lineHeight: 1.9, marginBottom: 18, maxWidth: 700 }}>
+            <p style={{ fontSize: isMobile ? 12 : 14, color: "#a9a9bc", lineHeight: 1.9, marginBottom: 18, maxWidth: 700 }}>
               I keep exploring new technologies to stay engaged and keep learning. My tech stack includes React.js for
               frontend and Python with Django, FastAPI, and Flask for backend development.
             </p>
-            <p style={{ fontSize: 16, color: "#a9a9bc", lineHeight: 1.9, maxWidth: 700 }}>
+            <p style={{ fontSize: isMobile ? 12 : 14, color: "#a9a9bc", lineHeight: 1.9, maxWidth: 700 }}>
               I believe in learning from anyone and everyone, constantly improving myself every day. I’m always open to
               collaborating, learning, and building something impactful.
             </p>
@@ -271,7 +284,7 @@ export default function AboutPage({ onNavigate }) {
               background: "linear-gradient(180deg, rgba(201,168,76,0.10), rgba(255,255,255,0.02))",
               border: "1px solid rgba(255,255,255,0.08)",
               borderRadius: 24,
-              padding: 28,
+              padding: isMobile ? 24 : 28,
               boxShadow: "0 24px 64px rgba(0,0,0,0.34)",
               display: "grid",
               gap: 18,
@@ -308,11 +321,11 @@ export default function AboutPage({ onNavigate }) {
                 US
               </div>
               <div>
-                <div style={{ fontSize: 18, color: "var(--text)", fontWeight: 700 }}>Aspiring Backend Developer</div>
+                <div style={{ fontSize: isMobile ? 15 : 18, color: "var(--text)", fontWeight: 700 }}>Aspiring Backend Developer</div>
                 <div
                   style={{
                     fontFamily: "var(--mono)",
-                    fontSize: 11,
+                    fontSize: isMobile ? 10 : 11,
                     color: "#9f9fb5",
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
@@ -352,7 +365,7 @@ export default function AboutPage({ onNavigate }) {
                       flexShrink: 0,
                     }}
                   />
-                  <div style={{ fontSize: 14.5, color: "#b5b5c8", lineHeight: 1.7 }}>{item}</div>
+                  <div style={{ fontSize: isMobile ? 12 : 14.5, color: "#b5b5c8", lineHeight: 1.7 }}>{item}</div>
                 </div>
               ))}
             </div>
@@ -508,24 +521,24 @@ export default function AboutPage({ onNavigate }) {
             background: "rgba(255,255,255,0.025)",
             border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: 24,
-            padding: 30,
+            padding: isMobile ? 24 : 30,
             boxShadow: "0 24px 64px rgba(0,0,0,0.32)",
           }}
         >
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "minmax(0, 0.9fr) minmax(320px, 1.1fr)",
+              gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 0.9fr) minmax(320px, 1.1fr)",
               gap: 28,
               alignItems: "start",
             }}
           >
             <div>
               {sectionLabel("Contact")}
-              <h2 style={{ fontFamily: "var(--serif)", fontSize: 36, lineHeight: 1.12, marginBottom: 14 }}>
+              <h2 style={{ fontFamily: "var(--serif)", fontSize: isMobile ? 26 : 36, lineHeight: 1.12, marginBottom: 14 }}>
                 Open to collaboration, learning, and meaningful work
               </h2>
-              <p style={{ fontSize: 16, color: "#b0b0c3", lineHeight: 1.85, maxWidth: 540 }}>
+              <p style={{ fontSize: isMobile ? 13 : 16, color: "#b0b0c3", lineHeight: 1.85, maxWidth: 540 }}>
                 If you want to connect for collaboration, backend work, project discussions, or just to exchange ideas,
                 you can reach me through the links here.
               </p>

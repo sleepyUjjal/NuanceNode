@@ -82,10 +82,10 @@ export default function SystemDesign({ onNavigate }) {
       
       {/* Header */}
       <div className="fade-up" style={{ textAlign: "center", marginBottom: 60, maxWidth: 800 }}>
-        <h2 style={{ fontFamily: "var(--serif)", fontSize: 42, fontWeight: 800, color: "var(--text)", marginBottom: 20, letterSpacing: "-0.02em" }}>
+        <h2 style={{ fontFamily: "var(--serif)", fontSize: 32, fontWeight: 800, color: "var(--text)", marginBottom: 20, letterSpacing: "-0.02em" }}>
           Behind the Analytical Engine
         </h2>
-        <p style={{ fontFamily: "var(--body)", fontSize: 16, color: "var(--text-dim)", lineHeight: 1.6 }}>
+        <p style={{ fontFamily: "var(--body)", fontSize: 15, color: "var(--text-dim)", lineHeight: 1.6 }}>
           NuanceNode is driven by a bespoke multi-agent Python backend. It utilizes concurrent thread execution to fetch, criticize, and model claims in real-time.
         </p>
       </div>
@@ -116,19 +116,19 @@ export default function SystemDesign({ onNavigate }) {
             }}
           >
             {/* Ambient Background Number */}
-            <div style={{ position: "absolute", right: -10, top: -20, fontSize: 120, fontFamily: "var(--mono)", fontWeight: 900, color: "rgba(255,255,255,0.03)", zIndex: 0, pointerEvents: "none" }}>
+            <div style={{ position: "absolute", right: -10, top: -20, fontSize: 100, fontFamily: "var(--mono)", fontWeight: 900, color: "rgba(255,255,255,0.03)", zIndex: 0, pointerEvents: "none" }}>
               {mod.id}
             </div>
 
             {/* Content Content */}
             <div style={{ position: "relative", zIndex: 1 }}>
-              <div style={{ width: 56, height: 56, borderRadius: 12, background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20 }}>
                 {mod.svg}
               </div>
-              <h3 style={{ fontFamily: "var(--body)", fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 16 }}>
+              <h3 style={{ fontFamily: "var(--body)", fontSize: 18, fontWeight: 700, color: "var(--text)", marginBottom: 12 }}>
                 {mod.title}
               </h3>
-              <p style={{ fontFamily: "var(--body)", fontSize: 15, color: "var(--text-faint)", lineHeight: 1.6 }}>
+              <p style={{ fontFamily: "var(--body)", fontSize: 14, color: "var(--text-faint)", lineHeight: 1.6 }}>
                 {mod.desc}
               </p>
             </div>
@@ -136,10 +136,9 @@ export default function SystemDesign({ onNavigate }) {
         ))}
       </div>
 
-      {/* Comprehensive Footer */}
       <footer style={{ marginTop: 100, width: "100%", padding: "48px 0", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
         
-        <div style={{ display: "flex", gap: 32, alignItems: "center", fontFamily: "var(--body)", fontSize: 15, fontWeight: 500 }}>
+        <div style={{ display: "flex", gap: 32, alignItems: "center", fontFamily: "var(--body)", fontSize: 14, fontWeight: 500 }}>
           <button
             type="button"
             onClick={() => onNavigate?.("about")}

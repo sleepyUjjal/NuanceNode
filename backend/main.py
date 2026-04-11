@@ -55,13 +55,14 @@ app = FastAPI(lifespan=lifespan, **docs_service.get_app_docs_config())
 docs_service.attach_custom_openapi(app)
 
 dotenv.load_dotenv()  # Load environment variables from .env file
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS")
+ALLOWED_ORIGINS_ENV = os.getenv("ALLOWED_ORIGINS", "")
+allow_origins = [origin.strip() for origin in ALLOWED_ORIGINS_ENV.split(",")] if ALLOWED_ORIGINS_ENV else ["*"]
 
 # CORS setup for frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS.split(","), 
-    allow_credentials=True,
+    allow_origins=allow_origins, 
+    allow_credentials=True if "*" not in allow_origins else False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

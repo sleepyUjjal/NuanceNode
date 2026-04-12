@@ -15,7 +15,7 @@ export default function PhaseLoader({ claim, phaseIndex }) {
 
     const intervalId = window.setInterval(() => {
       setActiveActivityIndex((current) => (current + 1) % phaseActivities.length);
-    }, 1100);
+    }, 2000);
 
     return () => window.clearInterval(intervalId);
   }, [phaseActivities]);
@@ -276,9 +276,8 @@ export default function PhaseLoader({ claim, phaseIndex }) {
                               : isActive
                                 ? "rgba(201,168,76,0.18)"
                                 : "rgba(255,255,255,0.04)",
-                            border: `1px solid ${
-                              isComplete ? "rgba(39,174,96,0.28)" : isActive ? "rgba(201,168,76,0.25)" : "var(--border)"
-                            }`,
+                            border: `1px solid ${isComplete ? "rgba(39,174,96,0.28)" : isActive ? "rgba(201,168,76,0.25)" : "var(--border)"
+                              }`,
                           }}
                         >
                           {isComplete ? "✓" : isActive ? "•" : index + 1}

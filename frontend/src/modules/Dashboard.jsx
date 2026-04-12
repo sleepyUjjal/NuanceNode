@@ -141,22 +141,38 @@ export default function Dashboard({ token, onLogout }) {
       return undefined;
     }
 
-    const maxAutoPhaseIndex = Math.max(0, analysisPhases.length - 2);
-    let timeoutId;
+    // Normal distribution: middle phases get more time, edges are faster
+    // Phases: 0=Claim Received, 1=Searching, 2=Checking Facts, 3=Testing Logic, 4=Reflection, 5=Final
+    const phaseDelays = [
+      1500,  // Phase 0 → 1: Quick claim receipt
+      3200,  // Phase 1 → 2: Searching sources
+      4800,  // Phase 2 → 3: Checking facts (heaviest)
+      4200,  // Phase 3 → 4: Testing logic (heavy)
+      3000,  // Phase 4 → 5: Model reflection
+    ];
 
-    const scheduleAdvance = (delay) => {
+    const maxAutoPhaseIndex = analysisPhases.length - 1;
+    let timeoutId;
+    let currentStep = 0;
+
+    const scheduleAdvance = () => {
+      if (currentStep >= phaseDelays.length) return;
+
+      const delay = phaseDelays[currentStep];
+      // Add ±15% jitter so it doesn't feel mechanical
+      const jitter = delay * (0.85 + Math.random() * 0.3);
+
       timeoutId = window.setTimeout(() => {
         setLoadingPhaseIndex((current) => {
           const next = Math.min(current + 1, maxAutoPhaseIndex);
-          if (next < maxAutoPhaseIndex) {
-            scheduleAdvance(1600); // Give users time to read the text
-          }
           return next;
         });
-      }, delay);
+        currentStep++;
+        scheduleAdvance();
+      }, jitter);
     };
 
-    scheduleAdvance(800);
+    scheduleAdvance();
 
     return () => {
       if (timeoutId) {

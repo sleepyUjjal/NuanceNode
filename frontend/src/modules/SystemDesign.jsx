@@ -1,6 +1,8 @@
 import logo from "../assets/logo.webp";
+import { useNavigate } from "react-router-dom";
 
 export default function SystemDesign({ onNavigate }) {
+  const navigate = useNavigate();
   const contactLinks = {
     email: "mailto:ujjaldeep.work@gmail.com",
     github: "https://github.com/sleepyUjjal",
@@ -141,7 +143,7 @@ export default function SystemDesign({ onNavigate }) {
         <div style={{ display: "flex", gap: 32, alignItems: "center", fontFamily: "var(--body)", fontSize: 14, fontWeight: 500 }}>
           <button
             type="button"
-            onClick={() => onNavigate?.("about")}
+            onClick={() => navigate("/contact")}
             style={{ background: "none", border: "none", color: "var(--text)", textDecoration: "none", transition: "color 0.2s", cursor: "pointer", fontFamily: "inherit", fontSize: "inherit", fontWeight: "inherit" }}
             onMouseEnter={e => e.currentTarget.style.color = "var(--gold)"}
             onMouseLeave={e => e.currentTarget.style.color = "var(--text)"}

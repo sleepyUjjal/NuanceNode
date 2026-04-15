@@ -119,8 +119,8 @@ That specialization is the difference:
 
 - Frontend: React + Vite
 - Backend: FastAPI
-- Database: SQLAlchemy + MySQL
-- Local model runtime: Ollama
+- Database: SQLAlchemy + Supabase
+- Model runtime: Ollama
 - Reporting: PDF generation
 
 ### Frontend: React + Vite
@@ -144,7 +144,7 @@ The backend is built with FastAPI and acts as the orchestration layer for the en
 NuanceNode uses SQLAlchemy as the ORM and can work with either MySQL or Supabase Postgres.
 
 - SQLAlchemy handles the application-side models, sessions, and database interaction.
-- MySQL or Supabase Postgres stores users, analyzed claims, timestamps, and saved analysis reports.
+- Supabase Postgres stores users, analyzed claims, timestamps, and saved analysis reports.
 - This matters because NuanceNode is not just a transient chatbot session. It keeps a user-linked history of investigations and supports revisiting previous reports.
 
 ### Local LLM Runtime: Ollama
@@ -298,7 +298,7 @@ ollama serve
 In another terminal:
 
 ```bash
-ollama pull mistral:7b
+ollama pull YOUR_PREFERRED_MODEL
 ```
 
 If you choose a different model, update `OLLAMA_MODEL` in `backend/.env`.
@@ -380,7 +380,7 @@ Ollama:
 ```bash
 ollama serve
 ollama list
-ollama pull mistral:7b
+ollama pull YOUR_PREFERRED_MODEL
 ```
 
 ### 11. Setup Notes

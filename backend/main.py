@@ -17,6 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, Response, HTMLResponse
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import text
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 
@@ -104,7 +105,17 @@ def get_current_user(request: Request, token: str = Depends(oauth2_scheme), db: 
 @app.get("/health", tags=["Infrastructure"])
 def health_check():
     """Lightweight health endpoint for ALB and uptime monitors."""
-    return {"status": "ok"}
+    return {"status": "ok", "message": "Server is alive"}
+
+@app.get("/dbhealth", tags=["Infrastructure"])
+def db_health_check(db: Session = Depends(get_db)):
+    """Database health endpoint to keep Supabase alive."""
+    try:
+        db.execute(text("SELECT 1"))
+        return {"status": "ok", "message": "Database is connected and responsive"}
+    except Exception as e:
+        logger.exception("Database health check failed")
+        raise HTTPException(status_code=503, detail="Database is unreachable")
 
 
 # ---------------------------------------------------------

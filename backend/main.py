@@ -4,6 +4,7 @@ import os
 import random
 import re
 import requests
+import redis
 from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
 from typing import List
@@ -116,6 +117,20 @@ def db_health_check(db: Session = Depends(get_db)):
     except Exception as e:
         logger.exception("Database health check failed")
         raise HTTPException(status_code=503, detail="Database is unreachable")
+
+@app.get("/redishealth", tags=["Infrastructure"])
+def redis_health_check():
+    """Redis database health endpoint to keep it pinged up."""
+    redis_url = os.environ.get("REDIS_URL")
+    if not redis_url:
+        raise HTTPException(status_code=500, detail="REDIS_URL is not configured")
+    try:
+        with redis.Redis.from_url(redis_url) as r:
+            r.ping()
+        return {"status": "ok", "message": "Redis is connected and responsive"}
+    except Exception as e:
+        logger.exception("Redis health check failed")
+        raise HTTPException(status_code=503, detail="Redis is unreachable")
 
 
 # ---------------------------------------------------------

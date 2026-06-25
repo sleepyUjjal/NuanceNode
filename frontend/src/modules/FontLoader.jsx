@@ -19,7 +19,7 @@ export default function FontLoader() {
         --amber:      #e67e22;
         --text:       #e8e8f0;
         --text-dim:   #888899;
-        --text-faint: #44445a;
+        --text-faint: #7f7f7fff;
         --mono:       'IBM Plex Mono', monospace;
         --serif:      'Playfair Display', Georgia, serif;
         --body:       'Lora', Georgia, serif;

@@ -33,6 +33,12 @@ export default function App() {
     setToken(null);
   }
 
+  useEffect(() => {
+    const onUnauthorized = () => handleLogout();
+    window.addEventListener("unauthorized", onUnauthorized);
+    return () => window.removeEventListener("unauthorized", onUnauthorized);
+  }, []);
+
   return (
     <Router>
       <FontLoader />

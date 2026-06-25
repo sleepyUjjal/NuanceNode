@@ -17,8 +17,13 @@ export async function apiFetch(path, opts = {}, token = null) {
 
   const res = await fetch(`${API}${path}`, { ...opts, headers });
   if (!res.ok) {
+    if (res.status === 401) {
+      window.dispatchEvent(new Event("unauthorized"));
+    }
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || `HTTP ${res.status}`);
+    const error = new Error(err.detail || `HTTP ${res.status}`);
+    error.status = res.status;
+    throw error;
   }
 
   return res.json();
@@ -36,6 +41,9 @@ export async function downloadAuthenticatedFile(path, token, filename = "NuanceN
   });
 
   if (!res.ok) {
+    if (res.status === 401) {
+      window.dispatchEvent(new Event("unauthorized"));
+    }
     let detail = `HTTP ${res.status}`;
     try {
       const data = await res.json();
